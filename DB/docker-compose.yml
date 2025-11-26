@@ -1,0 +1,31 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: vroommates-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: vroommates
+      MYSQL_USER: vroom
+      MYSQL_PASSWORD: vroompass
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: vroommates-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: vroom
+      PMA_PASSWORD: vroompass
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:
