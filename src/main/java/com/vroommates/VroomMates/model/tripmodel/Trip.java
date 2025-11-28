@@ -1,0 +1,30 @@
+package com.vroommates.VroomMates.model.tripmodel;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Trip {
+    @Id
+    @GeneratedValue
+    private int TripID;
+    private int DriverID;
+    private boolean IsLive;
+
+    //start coordinates
+    private int StartLat;
+    private int StartLon;
+
+    //end coordinates
+    private int EndLat;
+    private int EndLon;
+}
