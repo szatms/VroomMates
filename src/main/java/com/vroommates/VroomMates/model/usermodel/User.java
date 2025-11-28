@@ -1,5 +1,6 @@
 package com.vroommates.VroomMates.model.usermodel;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -18,16 +19,20 @@ import java.time.LocalDateTime;
 public class User {
     @Id
     @GeneratedValue
-    private int userID;
+    private int userId;
     private String role;
+    private boolean isDriver;
+    private boolean enabled;
 
     private double lat;
     private double lon;
 
     private String userName;
-    private String passwordHash;
+    private String passwordHash; //majd bcrypt-el meg kell oldani
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private String displayName;
+    @Column(unique = true)
     private String email;
     private String PFP;
 }
