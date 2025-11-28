@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class Trip {
     @Id
     @GeneratedValue
-    private Long TripID;
+    private int TripID;
     private int DriverID;
     private boolean IsLive;
 

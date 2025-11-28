@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class User {
     @Id
     @GeneratedValue
-    private Long UserID;
+    private int UserID;
     private boolean IsDriver;
 
     private int Lat;
