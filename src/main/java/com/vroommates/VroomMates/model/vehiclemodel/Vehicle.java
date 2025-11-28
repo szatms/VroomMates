@@ -14,14 +14,14 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Vehicle {
     @Id
-    private String Plate; //NEM self-generated value, minden user maga adja meg
-    private int OwnerID;
+    private String plate; //NEM self-generated value, minden user maga adja meg
+    private int ownerID;
 
-    private int Seats;
-    private int Make;
-    private int Model;
+    private int seats;
+    private int make;
+    private int model;
     private int year;
-    private String Colour;
-    private String Fuel;
+    private String colour;
+    private String fuel;
     private String picture;
 }

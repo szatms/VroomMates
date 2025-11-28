@@ -16,15 +16,15 @@ import lombok.NoArgsConstructor;
 public class Trip {
     @Id
     @GeneratedValue
-    private int TripID;
-    private int DriverID;
-    private boolean IsLive;
+    private int tripID;
+    private int driverID;
+    private boolean isLive;
 
     //start coordinates
-    private int StartLat;
-    private int StartLon;
+    private double startLat;
+    private double startLon;
 
     //end coordinates
-    private int EndLat;
-    private int EndLon;
+    private double endLat;
+    private double endLon;
 }

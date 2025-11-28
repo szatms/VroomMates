@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Entity
 @AllArgsConstructor
@@ -16,16 +18,16 @@ import lombok.NoArgsConstructor;
 public class User {
     @Id
     @GeneratedValue
-    private int UserID;
-    private boolean IsDriver;
+    private int userID;
+    private String role;
 
-    private int Lat;
-    private int Lon;
+    private double lat;
+    private double lon;
 
-    private String UserName;
-    private String Password;
-    private String PersonalDate;
-    private String DisplayName;
-    private String Email;
+    private String userName;
+    private String passwordHash;
+    private LocalDateTime createdAt;
+    private String displayName;
+    private String email;
     private String PFP;
 }
