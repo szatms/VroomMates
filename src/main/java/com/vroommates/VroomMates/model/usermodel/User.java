@@ -20,7 +20,7 @@ public class User {
     @Id
     @GeneratedValue
     private int userId;
-    private String role;
+    private boolean isAdmin;
     private boolean isDriver;
     private boolean enabled;
 

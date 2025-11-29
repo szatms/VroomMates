@@ -19,7 +19,7 @@ public class Vehicle {
 
     private int seats;
     private int make;
-    private int model;
+    private String model;
     private int year;
     private String colour;
     private String fuel;
