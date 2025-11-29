@@ -21,10 +21,10 @@ public class Trip {
     private boolean IsLive;
 
     //start coordinates
-    private int StartLat;
-    private int StartLon;
+    private long StartLat;
+    private long StartLon;
 
     //end coordinates
-    private int EndLat;
-    private int EndLon;
+    private long EndLat;
+    private long EndLon;
 }
