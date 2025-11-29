@@ -24,8 +24,8 @@ public class User {
     private boolean isDriver;
     private boolean enabled;
 
-    private double lat;
-    private double lon;
+    private float lat;
+    private float lon;
 
     private String userName;
     private String passwordHash; //majd bcrypt-el meg kell oldani
