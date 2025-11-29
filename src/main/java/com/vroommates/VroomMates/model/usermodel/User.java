@@ -19,8 +19,8 @@ public class User {
     private int UserID;
     private boolean IsDriver;
 
-    private long Lat;
-    private long Lon;
+    private int Lat;
+    private int Lon;
 
     private String UserName;
     private String Password;
