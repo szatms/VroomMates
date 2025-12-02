@@ -15,35 +15,9 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
---
--- Table structure for table `trip`
---
+CREATE DATABASE IF NOT EXISTS `vroommates`;
 
-DROP TABLE IF EXISTS `trip`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `trip` (
-  `tripID` int NOT NULL AUTO_INCREMENT,
-  `driverID` int NOT NULL,
-  `startLat` float NOT NULL,
-  `startLon` float NOT NULL,
-  `endLat` float NOT NULL,
-  `endLon` float NOT NULL,
-  `isLive` tinyint(1) DEFAULT '0',
-  PRIMARY KEY (`tripID`),
-  KEY `driverid` (`driverID`),
-  CONSTRAINT `trip_ibfk_1` FOREIGN KEY (`driverID`) REFERENCES `user` (`userId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `trip`
---
-
-LOCK TABLES `trip` WRITE;
-/*!40000 ALTER TABLE `trip` DISABLE KEYS */;
-/*!40000 ALTER TABLE `trip` ENABLE KEYS */;
-UNLOCK TABLES;
+USE `vroommates`;
 
 --
 -- Table structure for table `user`
@@ -78,6 +52,38 @@ LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
+
+
+--
+-- Table structure for table `trip`
+--
+
+DROP TABLE IF EXISTS `trip`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `trip` (
+  `tripID` int NOT NULL AUTO_INCREMENT,
+  `driverID` int NOT NULL,
+  `startLat` float NOT NULL,
+  `startLon` float NOT NULL,
+  `endLat` float NOT NULL,
+  `endLon` float NOT NULL,
+  `isLive` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`tripID`),
+  KEY `driverid` (`driverID`),
+  CONSTRAINT `trip_ibfk_1` FOREIGN KEY (`driverID`) REFERENCES `user` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `trip`
+--
+
+LOCK TABLES `trip` WRITE;
+/*!40000 ALTER TABLE `trip` DISABLE KEYS */;
+/*!40000 ALTER TABLE `trip` ENABLE KEYS */;
+UNLOCK TABLES;
+
 
 --
 -- Table structure for table `vehicle`

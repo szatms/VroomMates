@@ -1,38 +1,64 @@
 package com.vroommates.VroomMates.model.usermodel;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+
 @Entity
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode(callSuper = false) // Csak ha van öröklés
+@NoArgsConstructor // A JPA-nak kell
 @AllArgsConstructor
-@NoArgsConstructor
 @Builder
 public class User {
+
     @Id
-    @GeneratedValue
-    private int userId;
-    private boolean isAdmin;
-    private boolean isDriver;
-    private boolean enabled;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter(AccessLevel.NONE) // ÚJ: Kizárja a Lombok automatikus generálását
+    @Setter(AccessLevel.NONE) // ÚJ: Kizárja a Lombok automatikus generálását
+    private Integer userId; //
 
-    private float lat;
-    private float lon;
+    private Boolean isAdmin;
+    private Boolean isDriver;
+    private Boolean enabled;
 
+    private Float lat;
+    private Float lon;
+
+    @Column(name = "username")
     private String userName;
-    private String passwordHash; //majd bcrypt-el meg kell oldani
+
+    @Column(name = "password")
+    private String passwordHash;
+
+    @Column(name = "createdat")
     private LocalDateTime createdAt;
+
+    @Column(name = "updatedat")
     private LocalDateTime updatedAt;
+
+    @Column(name = "displayname")
     private String displayName;
+
     @Column(unique = true)
     private String email;
+
+    @Column(name = "profilp")
     private String PFP;
+
+
+    public Integer getUserId() {
+        System.out.println("--- GETTER FUTÁS --- | userId érték: " + this.userId);
+        return this.userId;
+    }
+
+    public void setUserId(Integer userId) {
+        System.out.println("--- SETTER FUTÁS --- | Kapott userId érték: " + userId);
+        this.userId = userId;
+    }
+
 }
