@@ -47,4 +47,13 @@ public class UserController {
     ) {
         return ResponseEntity.ok(userService.updateUser(id, dto));
     }
+
+    // -----------------------------------------
+    // AKTUÁLIS USER LEKÉRÉSE
+    // -----------------------------------------
+    @GetMapping("/users/me")
+    public ResponseEntity<UserResponseDTO> getCurrentUser() {
+        return ResponseEntity.ok(userService.getCurrentUser());
+    }
+
 }

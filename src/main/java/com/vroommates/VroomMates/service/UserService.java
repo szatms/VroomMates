@@ -4,9 +4,14 @@ import com.vroommates.VroomMates.model.usermodel.User;
 import com.vroommates.VroomMates.model.usermodel.UserRepository;
 import com.vroommates.VroomMates.model.usermodel.dto.*;
 import com.vroommates.VroomMates.model.usermodel.mapper.UserMapper;
+import com.vroommates.VroomMates.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.vroommates.VroomMates.security.SecurityUser;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.Optional;
 
@@ -17,6 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     // -----------------------------------------------------------
     // REGISZTRÁCIÓ
@@ -40,12 +46,20 @@ public class UserService {
         // Entity → Response DTO
         UserResponseDTO response = userMapper.toResponseDTO(user);
 
-        // Token majd később kerül bele
+        // szerep meghatározása (mert kell a tokenhez)
+        String role = user.getIsAdmin() != null && user.getIsAdmin() ? "ADMIN"
+                : user.getIsDriver() != null && user.getIsDriver() ? "DRIVER"
+                : "USER";
+
+        // token generálás
+        String token = jwtService.generateToken(user.getUserId(), role);
+
         AuthResponseDTO auth = new AuthResponseDTO();
         auth.setUser(response);
-        auth.setAccessToken("TEMPORARY_TOKEN"); // később JWT
+        auth.setAccessToken(token);
 
         return auth;
+
     }
 
     // -----------------------------------------------------------
@@ -53,22 +67,27 @@ public class UserService {
     // -----------------------------------------------------------
     public AuthResponseDTO login(UserLoginDTO dto) {
 
-        // user keresése email alapján
+        // user keresése email alapján (email nem létezik)
         User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        // jelszó ellenőrzés
+        // jelszó ellenőrzése (rossz jelszó)
         if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Invalid email or password");
+            throw new BadCredentialsException("Invalid email or password");
         }
 
         // Response DTO készítése
         UserResponseDTO response = userMapper.toResponseDTO(user);
 
-        // token majd később
+        // role lekérése stb…
+        String role = user.getIsAdmin() ? "ADMIN" :
+                user.getIsDriver() ? "DRIVER" : "USER";
+
+        String token = jwtService.generateToken(user.getUserId(), role);
+
         AuthResponseDTO auth = new AuthResponseDTO();
         auth.setUser(response);
-        auth.setAccessToken("TEMPORARY_TOKEN");
+        auth.setAccessToken(token);
 
         return auth;
     }
@@ -98,4 +117,20 @@ public class UserService {
 
         return userMapper.toResponseDTO(user);
     }
+
+    // -----------------------------------------------------------
+    // AKTUÁLIS USER
+    // -----------------------------------------------------------
+    public UserResponseDTO getCurrentUser() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof SecurityUser securityUser)) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        // SecurityUser.getUser() → visszaadja az entitást
+        return userMapper.toResponseDTO(securityUser.getUser());
+    }
+
 }
