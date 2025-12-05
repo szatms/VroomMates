@@ -1,30 +1,50 @@
 package com.vroommates.VroomMates.controller;
 
-
-import com.vroommates.VroomMates.model.usermodel.User;
-import com.vroommates.VroomMates.model.usermodel.UserRepository;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.List;
+import com.vroommates.VroomMates.model.usermodel.dto.*;
+import com.vroommates.VroomMates.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
+@RequestMapping("/api")
 public class UserController {
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
-    @Autowired
-    private UserRepository userRepository;
-@GetMapping("/getusers")
-List<User> getUsers() {
-    List<User> users = userRepository.findAll();
 
-    // 2. Naplózás hozzáadása a visszatérés előtt:
-    logger.info("ADATBÁZISBÓL KIOLVASOTT ADATOK: {}", users);
+    private final UserService userService;
 
-    return users;
+    // -----------------------------------------
+    // REGISZTRÁCIÓ
+    // -----------------------------------------
+    @PostMapping("/auth/register")
+    public ResponseEntity<AuthResponseDTO> register(@RequestBody UserCreateDTO dto) {
+        return ResponseEntity.ok(userService.register(dto));
+    }
+
+    // -----------------------------------------
+    // LOGIN
+    // -----------------------------------------
+    @PostMapping("/auth/login")
+    public ResponseEntity<AuthResponseDTO> login(@RequestBody UserLoginDTO dto) {
+        return ResponseEntity.ok(userService.login(dto));
+    }
+
+    // -----------------------------------------
+    // USER LEKÉRÉSE ID ALAPJÁN
+    // -----------------------------------------
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserResponseDTO> getUser(@PathVariable Integer id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    // -----------------------------------------
+    // USER FRISSÍTÉSE
+    // -----------------------------------------
+    @PutMapping("/users/{id}")
+    public ResponseEntity<UserResponseDTO> updateUser(
+            @PathVariable Integer id,
+            @RequestBody UserUpdateDTO dto
+    ) {
+        return ResponseEntity.ok(userService.updateUser(id, dto));
     }
 }
