@@ -47,4 +47,10 @@ public class User {
     @Column(name = "profilp")
     private String pfp;
 
+    @Column(name = "distance")
+    private Integer distance;
+    @Column(name = "co2")
+    private Integer co2;
+
+
 }

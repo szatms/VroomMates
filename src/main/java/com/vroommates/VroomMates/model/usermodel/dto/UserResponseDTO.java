@@ -16,4 +16,6 @@ public class UserResponseDTO {
     private Double lon;
     private String pfp;
     private LocalDateTime createdAt;
+    private Integer distance;
+    private Integer co2;
 }
