@@ -6,7 +6,7 @@ import lombok.Data;
 public class UserUpdateDTO {
     private String displayName;
     private String pfp;
-    private boolean isDriver;
+    private Boolean driver;
     private double lat;
     private double lon;
 }

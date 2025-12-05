@@ -21,5 +21,5 @@ public class UserCreateDTO {
     @Size(min = 6, message = "Password must be at least 6 characters long.")
     private String password;
 
-    private boolean isDriver;
+    private boolean driver;
 }

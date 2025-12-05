@@ -5,7 +5,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Getter
 @Setter
@@ -18,8 +17,6 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter(AccessLevel.NONE) // ÚJ: Kizárja a Lombok automatikus generálását
-    @Setter(AccessLevel.NONE) // ÚJ: Kizárja a Lombok automatikus generálását
     private Integer userId; //
 
     private Boolean isAdmin;
@@ -48,17 +45,6 @@ public class User {
     private String email;
 
     @Column(name = "profilp")
-    private String PFP;
-
-
-    public Integer getUserId() {
-        System.out.println("--- GETTER FUTÁS --- | userId érték: " + this.userId);
-        return this.userId;
-    }
-
-    public void setUserId(Integer userId) {
-        System.out.println("--- SETTER FUTÁS --- | Kapott userId érték: " + userId);
-        this.userId = userId;
-    }
+    private String pfp;
 
 }
