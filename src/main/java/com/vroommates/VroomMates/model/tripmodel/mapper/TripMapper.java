@@ -1,0 +1,33 @@
+package com.vroommates.VroomMates.model.tripmodel.mapper;
+
+import com.vroommates.VroomMates.model.tripmodel.Trip;
+import com.vroommates.VroomMates.model.tripmodel.dto.TripRequestDTO;
+import com.vroommates.VroomMates.model.tripmodel.dto.TripResponseDTO;
+import org.springframework.stereotype.Component;
+
+@Component
+public class TripMapper {
+
+    public Trip toEntity(TripRequestDTO dto) {
+        return Trip.builder()
+                .driverID(dto.getDriverID())
+                .isLive(dto.isLive())
+                .startLat(dto.getStartLat())
+                .startLon(dto.getStartLon())
+                .endLat(dto.getEndLat())
+                .endLon(dto.getEndLon())
+                .build();
+    }
+
+    public TripResponseDTO toDTO(Trip entity) {
+        return TripResponseDTO.builder()
+                .tripID(entity.getTripID())
+                .driverID(entity.getDriverID())
+                .isLive(entity.isLive())
+                .startLat(entity.getStartLat())
+                .startLon(entity.getStartLon())
+                .endLat(entity.getEndLat())
+                .endLon(entity.getEndLon())
+                .build();
+    }
+}
