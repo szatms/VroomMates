@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class VehicleMapper {
 
+    // DTO → Entity (owner NINCS beállítva itt!)
     public Vehicle toEntity(VehicleRequestDTO dto) {
         return Vehicle.builder()
                 .plate(dto.getPlate())
-                .ownerID(dto.getOwnerID())
                 .seats(dto.getSeats())
                 .make(dto.getMake())
                 .model(dto.getModel())
@@ -22,10 +22,11 @@ public class VehicleMapper {
                 .build();
     }
 
+    // Entity → DTO
     public VehicleResponseDTO toDTO(Vehicle entity) {
         return VehicleResponseDTO.builder()
                 .plate(entity.getPlate())
-                .ownerID(entity.getOwnerID())
+                .ownerID(entity.getOwner().getUserId())   // owner → ownerID
                 .seats(entity.getSeats())
                 .make(entity.getMake())
                 .model(entity.getModel())

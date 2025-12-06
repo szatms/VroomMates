@@ -1,12 +1,14 @@
 package com.vroommates.VroomMates.model.tripmodel;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import com.vroommates.VroomMates.model.usermodel.User;
+import com.vroommates.VroomMates.model.vehiclemodel.Vehicle;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -17,8 +19,16 @@ public class Trip {
     @Id
     @GeneratedValue
     private int tripID;
-    private int driverID;
+
+    @ManyToOne
+    private User driver;
     private boolean isLive;
+
+    @ManyToOne
+    @JoinColumn(name = "vehicle_plate")
+    private Vehicle vehicle;
+
+    private LocalDateTime departureTime;
 
     //start coordinates
     private float startLat;

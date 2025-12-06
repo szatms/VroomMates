@@ -1,5 +1,7 @@
 package com.vroommates.VroomMates.service;
 
+import com.vroommates.VroomMates.model.usermodel.User;
+import com.vroommates.VroomMates.model.usermodel.UserRepository;
 import com.vroommates.VroomMates.model.vehiclemodel.Vehicle;
 import com.vroommates.VroomMates.model.vehiclemodel.VehicleRepository;
 import com.vroommates.VroomMates.model.vehiclemodel.dto.VehicleRequestDTO;
@@ -16,15 +18,30 @@ public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleMapper vehicleMapper;
+    private final UserRepository userRepository;
 
     public VehicleResponseDTO createVehicle(VehicleRequestDTO dto) {
-        Vehicle saved = vehicleRepository.save(vehicleMapper.toEntity(dto));
+
+        // 1) Owner lekérése az ID alapján
+        User owner = userRepository.findById(dto.getOwnerID())
+                .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+        // 2) Entity létrehozása mapperrel
+        Vehicle vehicle = vehicleMapper.toEntity(dto);
+
+        // 3) Owner beállítása
+        vehicle.setOwner(owner);
+
+        // 4) Mentés
+        Vehicle saved = vehicleRepository.save(vehicle);
+
         return vehicleMapper.toDTO(saved);
     }
 
     public VehicleResponseDTO getVehicle(String plate) {
         Vehicle v = vehicleRepository.findById(plate)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+
         return vehicleMapper.toDTO(v);
     }
 
@@ -36,10 +53,16 @@ public class VehicleService {
     }
 
     public VehicleResponseDTO updateVehicle(String plate, VehicleRequestDTO dto) {
+
         Vehicle existing = vehicleRepository.findById(plate)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
 
-        existing.setOwnerID(dto.getOwnerID());
+        // Owner lekérése új ownerID alapján
+        User owner = userRepository.findById(dto.getOwnerID())
+                .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+        // Üzleti mezők frissítése
+        existing.setOwner(owner);
         existing.setSeats(dto.getSeats());
         existing.setMake(dto.getMake());
         existing.setModel(dto.getModel());

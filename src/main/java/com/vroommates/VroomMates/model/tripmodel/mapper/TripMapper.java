@@ -10,8 +10,8 @@ public class TripMapper {
 
     public Trip toEntity(TripRequestDTO dto) {
         return Trip.builder()
-                .driverID(dto.getDriverID())
                 .isLive(dto.isLive())
+                .departureTime(dto.getDepartureTime())
                 .startLat(dto.getStartLat())
                 .startLon(dto.getStartLon())
                 .endLat(dto.getEndLat())
@@ -22,12 +22,16 @@ public class TripMapper {
     public TripResponseDTO toDTO(Trip entity) {
         return TripResponseDTO.builder()
                 .tripID(entity.getTripID())
-                .driverID(entity.getDriverID())
+                .driverID(entity.getDriver().getUserId())
+                .vehiclePlate(entity.getVehicle().getPlate())
                 .isLive(entity.isLive())
+                .departureTime(entity.getDepartureTime())
                 .startLat(entity.getStartLat())
                 .startLon(entity.getStartLon())
                 .endLat(entity.getEndLat())
                 .endLon(entity.getEndLon())
                 .build();
     }
+
 }
+
