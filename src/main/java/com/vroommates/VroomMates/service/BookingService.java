@@ -26,6 +26,10 @@ public class BookingService {
     private final UserRepository userRepository;
     private final BookingMapper bookingMapper;
 
+    // =======================================================================
+    // JOIN TRIP
+    // =======================================================================
+
     public BookingResponseDTO joinTrip(BookingRequestDTO dto) {
 
         Trip trip = tripRepository.findById(dto.getTripID())
@@ -34,29 +38,30 @@ public class BookingService {
         User user = userRepository.findById(dto.getUserID())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-
-        // 1) User nem lehet a driver
+        // 1) Driver nem lehet utas
         if (trip.getDriver().equals(user)) {
             throw new RuntimeException("Driver cannot join their own trip.");
         }
 
-        // 2) Nincs-e már foglalása?
+        // 2) Van-e már foglalása?
         bookingRepository.findByTripAndUser(trip, user)
-                .ifPresent(b -> {
-                    if (b.getStatus() == BookingStatus.JOINED) {
+                .ifPresent(existing -> {
+                    if (existing.getStatus() == BookingStatus.JOINED) {
                         throw new RuntimeException("User already joined the trip.");
                     }
                 });
 
-        // 3) Kapacitás check
-        int totalSeats = trip.getVehicle().getSeats();
-        int active = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
+        // 3) Kapacitás ellenőrzés (ÖSSZES ülés logika)
+        int totalSeats = trip.getVehicle().getSeats(); // pl. 7
+        int maxPassengerSeats = totalSeats - 1;        // sofőr hely levonva
 
-        if (active >= totalSeats) {
+        int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
+
+        if (activePassengers >= maxPassengerSeats) {
             throw new RuntimeException("Trip is full.");
         }
 
-        // 4) Létrehozás
+        // 4) Foglalás mentése
         Booking booking = Booking.builder()
                 .trip(trip)
                 .user(user)
@@ -69,6 +74,9 @@ public class BookingService {
         return bookingMapper.toDTO(booking);
     }
 
+    // =======================================================================
+    // LEAVE TRIP
+    // =======================================================================
 
     public BookingResponseDTO leaveTrip(BookingRequestDTO dto) {
 
@@ -89,12 +97,17 @@ public class BookingService {
         return bookingMapper.toDTO(booking);
     }
 
+    // =======================================================================
+    // PASSENGER LIST
+    // =======================================================================
+
     public List<PassengerResponseDTO> getPassengersForTrip(int tripID) {
 
         Trip trip = tripRepository.findById(tripID)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
-        List<Booking> bookings = bookingRepository.findByTripAndStatus(trip, BookingStatus.JOINED);
+        List<Booking> bookings =
+                bookingRepository.findByTripAndStatus(trip, BookingStatus.JOINED);
 
         return bookings.stream()
                 .map(booking -> PassengerResponseDTO.builder()

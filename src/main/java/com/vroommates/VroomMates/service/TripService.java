@@ -29,17 +29,18 @@ public class TripService {
 
     private TripResponseDTO toTripDTOWithPassengers(Trip trip) {
 
-        int totalSeats = trip.getVehicle().getSeats();
+        int totalSeats = trip.getVehicle().getSeats();  // összes ülés (pl. 7)
         int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
-        int remainingSeats = totalSeats - activePassengers;
+        int passengerCount = activePassengers + 1;   // sofőr is számít!
+        int remainingSeats = totalSeats - passengerCount;
 
         TripResponseDTO dto = tripMapper.toDTO(trip);
         dto.setTotalSeats(totalSeats);
-        dto.setPassengerCount(activePassengers);
+        dto.setPassengerCount(passengerCount);
         dto.setRemainingSeats(remainingSeats);
-
         return dto;
     }
+
 
 
     public TripResponseDTO createTrip(TripRequestDTO dto) {
