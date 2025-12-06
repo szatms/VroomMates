@@ -1,5 +1,7 @@
 package com.vroommates.VroomMates.service;
 
+import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
+import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.tripmodel.dto.TripRequestDTO;
@@ -21,7 +23,24 @@ public class TripService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
+    private final BookingRepository bookingRepository;
     private final TripMapper tripMapper;
+
+
+    private TripResponseDTO toTripDTOWithPassengers(Trip trip) {
+
+        int totalSeats = trip.getVehicle().getSeats();
+        int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
+        int remainingSeats = totalSeats - activePassengers;
+
+        TripResponseDTO dto = tripMapper.toDTO(trip);
+        dto.setTotalSeats(totalSeats);
+        dto.setPassengerCount(activePassengers);
+        dto.setRemainingSeats(remainingSeats);
+
+        return dto;
+    }
+
 
     public TripResponseDTO createTrip(TripRequestDTO dto) {
 
@@ -36,21 +55,24 @@ public class TripService {
         trip.setVehicle(vehicle);
 
         Trip saved = tripRepository.save(trip);
-        return tripMapper.toDTO(saved);
+        return toTripDTOWithPassengers(saved);
     }
+
 
     public TripResponseDTO getTripById(int id) {
         Trip trip = tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
-        return tripMapper.toDTO(trip);
+        return toTripDTOWithPassengers(trip);
     }
+
 
     public List<TripResponseDTO> getAllTrips() {
         return tripRepository.findAll()
                 .stream()
-                .map(tripMapper::toDTO)
+                .map(this::toTripDTOWithPassengers)
                 .toList();
     }
+
 
     public TripResponseDTO updateTrip(int id, TripRequestDTO dto) {
 
@@ -66,14 +88,16 @@ public class TripService {
         existing.setDriver(driver);
         existing.setVehicle(vehicle);
         existing.setLive(dto.isLive());
+        existing.setDepartureTime(dto.getDepartureTime());
         existing.setStartLat(dto.getStartLat());
         existing.setStartLon(dto.getStartLon());
         existing.setEndLat(dto.getEndLat());
         existing.setEndLon(dto.getEndLon());
 
         Trip updated = tripRepository.save(existing);
-        return tripMapper.toDTO(updated);
+        return toTripDTOWithPassengers(updated);
     }
+
 
     public void deleteTrip(int id) {
         tripRepository.deleteById(id);

@@ -5,6 +5,7 @@ import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingRequestDTO;
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingResponseDTO;
+import com.vroommates.VroomMates.model.bookingmodel.dto.PassengerResponseDTO;
 import com.vroommates.VroomMates.model.bookingmodel.mapper.BookingMapper;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -86,4 +88,21 @@ public class BookingService {
 
         return bookingMapper.toDTO(booking);
     }
+
+    public List<PassengerResponseDTO> getPassengersForTrip(int tripID) {
+
+        Trip trip = tripRepository.findById(tripID)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        List<Booking> bookings = bookingRepository.findByTripAndStatus(trip, BookingStatus.JOINED);
+
+        return bookings.stream()
+                .map(booking -> PassengerResponseDTO.builder()
+                        .userID(booking.getUser().getUserId())
+                        .name(booking.getUser().getUserName())
+                        .email(booking.getUser().getEmail())
+                        .build())
+                .toList();
+    }
+
 }

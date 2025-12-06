@@ -20,4 +20,8 @@ public class TripResponseDTO {
 
     private float endLat;
     private float endLon;
+
+    private int totalSeats;
+    private int passengerCount;
+    private int remainingSeats;
 }

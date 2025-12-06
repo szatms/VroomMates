@@ -2,12 +2,12 @@ package com.vroommates.VroomMates.controller;
 
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingRequestDTO;
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingResponseDTO;
+import com.vroommates.VroomMates.model.bookingmodel.dto.PassengerResponseDTO;
 import com.vroommates.VroomMates.service.BookingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -25,4 +25,10 @@ public class BookingController {
     public BookingResponseDTO leaveTrip(@RequestBody BookingRequestDTO dto) {
         return bookingService.leaveTrip(dto);
     }
+
+    @GetMapping("/passengers/{tripId}")
+    public List<PassengerResponseDTO> getPassengers(@PathVariable int tripId) {
+        return bookingService.getPassengersForTrip(tripId);
+    }
+
 }

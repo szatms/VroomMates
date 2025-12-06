@@ -32,6 +32,4 @@ public class TripMapper {
                 .endLon(entity.getEndLon())
                 .build();
     }
-
 }
-
