@@ -4,10 +4,7 @@ import com.vroommates.VroomMates.model.bookingmodel.dto.BookingRequestDTO;
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingResponseDTO;
 import com.vroommates.VroomMates.service.BookingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -24,5 +21,16 @@ public class BookingController {
     @PostMapping("/leave")
     public BookingResponseDTO leaveTrip(@RequestBody BookingRequestDTO dto) {
         return bookingService.leaveTrip(dto);
+    }
+
+    @PostMapping("/{bookingId}/accept")
+    public BookingResponseDTO acceptBooking(@PathVariable Long bookingId) {
+        return bookingService.acceptBooking(bookingId);
+    }
+
+    // Sofőr elutasítja
+    @PostMapping("/{bookingId}/reject")
+    public BookingResponseDTO rejectBooking(@PathVariable Long bookingId) {
+        return bookingService.rejectBooking(bookingId);
     }
 }

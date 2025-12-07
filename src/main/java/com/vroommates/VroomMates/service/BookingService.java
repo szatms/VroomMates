@@ -10,10 +10,12 @@ import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.usermodel.User;
 import com.vroommates.VroomMates.model.usermodel.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -58,7 +60,7 @@ public class BookingService {
         Booking booking = Booking.builder()
                 .trip(trip)
                 .user(user)
-                .status(BookingStatus.JOINED)
+                .status(BookingStatus.PENDING)
                 .joinedAt(LocalDateTime.now())
                 .build();
 
@@ -85,5 +87,43 @@ public class BookingService {
         bookingRepository.save(booking);
 
         return bookingMapper.toDTO(booking);
+    }
+
+    public BookingResponseDTO acceptBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        validateDriver(booking.getTrip());
+
+        int totalSeats = booking.getTrip().getVehicle().getSeats();
+        int active = bookingRepository.countByTripAndStatus(booking.getTrip(), BookingStatus.JOINED);
+
+        if (active >= totalSeats) {
+            throw new RuntimeException("Trip is full, cannot accept more passengers.");
+        }
+
+        booking.setStatus(BookingStatus.JOINED);
+        bookingRepository.save(booking);
+
+        return bookingMapper.toDTO(booking);
+    }
+
+    public BookingResponseDTO rejectBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        validateDriver(booking.getTrip());
+
+        booking.setStatus(BookingStatus.REJECTED);
+        bookingRepository.save(booking);
+
+        return bookingMapper.toDTO(booking);
+    }
+
+    private void validateDriver(Trip trip) {
+        String currentEmail = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        if (!trip.getDriver().getEmail().equals(currentEmail)) {
+            throw new RuntimeException("Only the driver can manage bookings for this trip.");
+        }
     }
 }
