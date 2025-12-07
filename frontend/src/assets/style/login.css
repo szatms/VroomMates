@@ -1,0 +1,112 @@
+.login-page-container {
+    background-color: transparent; /* Sötétszürke háttér a széleken */
+    padding-top: 120px; /* Kompenzálja a sticky Navbar magasságát */
+}
+
+.login-box {
+    background-color: #e5e5e5; /* Világos szürke-zöldes háttér */
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    max-width: 450px;
+    width: 90%;
+}
+
+.logo-container {
+    width: 100px;
+    height: 100px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.vroommates-logo {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+.app-title {
+    font-weight: bold;
+    color: #212529;
+    margin-bottom: 5px;
+}
+
+.sign-in-text {
+    font-size: 1.2em;
+    color: #212529; /* Sötétebb, mint a create-account-text */
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.create-account-link {
+    font-size: 0.9em;
+    color: #495057;
+}
+
+/* --- BEVITELI MEZŐK STÍLUSAI --- */
+
+/* Input mező konténer */
+.login-input-group {
+    background-color: #8fbc8f; /* Világos olívzöld háttér */
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Ikonok */
+.login-input-group .input-group-text {
+    background-color: #8fbc8f;
+    border: none;
+    color: white;
+}
+
+/* Maguk a beviteli mezők stílusa */
+.login-input-group .form-control {
+    background-color: #8fbc8f;
+    color: white;
+    border: none;
+    box-shadow: none;
+}
+
+/* Placeholder és fókusz stílusok */
+.login-input-group .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+}
+.login-input-group .form-control:focus {
+    background-color: #79a379; /* Kicsit sötétebb zöld fókuszban */
+    color: white;
+    box-shadow: none;
+}
+
+/* Elfelejtett jelszó link */
+.forgot-password-link {
+    font-size: 0.85em;
+    color: #4b7f4b; /* Sötétebb zöld a linkhez */
+    text-decoration: none;
+}
+.forgot-password-link:hover {
+    text-decoration: underline;
+}
+
+/* --- BEJELENTKEZÉS GOMB --- */
+
+.login-btn {
+    background-color: #4b7f4b; /* Sötétebb zöld a gombhoz */
+    color: white;
+    font-size: 1.4em;
+    padding: 10px 40px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.login-btn:hover {
+    background-color: #3e6d3e;
+}
