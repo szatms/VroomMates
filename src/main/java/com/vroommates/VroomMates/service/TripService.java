@@ -1,5 +1,6 @@
 package com.vroommates.VroomMates.service;
 
+import com.vroommates.VroomMates.model.bookingmodel.Booking;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.tripmodel.dto.TripRequestDTO;
@@ -9,6 +10,7 @@ import com.vroommates.VroomMates.model.usermodel.User;
 import com.vroommates.VroomMates.model.usermodel.UserRepository;
 import com.vroommates.VroomMates.model.vehiclemodel.Vehicle;
 import com.vroommates.VroomMates.model.vehiclemodel.VehicleRepository;
+import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ public class TripService {
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
     private final TripMapper tripMapper;
+    private final BookingRepository bookingRepository;
+    private final UserService userService;
 
     public TripResponseDTO createTrip(TripRequestDTO dto) {
 
@@ -77,5 +81,29 @@ public class TripService {
 
     public void deleteTrip(int id) {
         tripRepository.deleteById(id);
+    }
+
+    public void finishTrip(int tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        double distance = com.vroommates.VroomMates.util.DistanceCalculator.calculateDistance(
+                trip.getStartLat(), trip.getStartLon(),
+                trip.getEndLat(), trip.getEndLon()
+        );
+
+        // sofőr
+        userService.increaseUserCO2Stats(trip.getDriver(), distance);
+
+        // utasok
+        List<com.vroommates.VroomMates.model.bookingmodel.Booking> bookings =
+                bookingRepository.findByTripAndStatus(trip, com.vroommates.VroomMates.model.bookingmodel.BookingStatus.JOINED);
+
+        for (var booking : bookings) {
+            userService.increaseUserCO2Stats(booking.getUser(), distance);
+        }
+
+        trip.setLive(false);
+        tripRepository.save(trip);
     }
 }
