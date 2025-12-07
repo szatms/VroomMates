@@ -20,6 +20,11 @@ public class TripController {
         return tripService.createTrip(dto);
     }
 
+    @PostMapping("/{id}/finish")
+    public void finishTrip(@PathVariable int id) {
+        tripService.finishTrip(id);
+    }
+
     @GetMapping("/{id}")
     public TripResponseDTO getTrip(@PathVariable int id) {
         return tripService.getTripById(id);

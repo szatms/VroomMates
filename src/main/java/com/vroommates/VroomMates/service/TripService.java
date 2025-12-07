@@ -11,6 +11,7 @@ import com.vroommates.VroomMates.model.usermodel.User;
 import com.vroommates.VroomMates.model.usermodel.UserRepository;
 import com.vroommates.VroomMates.model.vehiclemodel.Vehicle;
 import com.vroommates.VroomMates.model.vehiclemodel.VehicleRepository;
+import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,8 @@ public class TripService {
     private final VehicleRepository vehicleRepository;
     private final BookingRepository bookingRepository;
     private final TripMapper tripMapper;
+    private final BookingRepository bookingRepository;
+    private final UserService userService;
 
 
     private TripResponseDTO toTripDTOWithPassengers(Trip trip) {

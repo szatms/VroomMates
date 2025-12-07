@@ -1,0 +1,187 @@
+.navbar {
+    background-color: #b2b2b2;
+    box-shadow: 0px 0px 10px #bbb;
+    padding: 0;
+    z-index: 101;
+    margin-bottom: 10px;
+}
+
+.navbar-brand {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    height: max-content;
+    margin: 0;
+}
+/* A logó kép magassága */
+.navbar-brand img {
+    height: 100px;
+}
+
+/* A navbar-brand horgonyt (a) célozza meg, a logón belül */
+/* A kép felett nincs hover, valószínűleg a navbar-brand horgonyra gondoltál */
+.navbar-brand:hover {
+    /* height: 100px;  A magasságot nem kell hoveren állítani */
+    background-color: rgb(131, 23, 131);
+}
+
+.navbar-nav{
+    background-color: #b2b2b2;
+    box-shadow: 0px 0px 10px #bbb;
+}
+
+/* Navigációs linkek stílusa */
+.navbar-nav .nav-link{
+    border-radius: 10px;
+    margin: 5px;
+    /* A háttérszín és szín áthelyezve a .nav-item a szelektorról ide, hogy a Bootstrap felülírása is működjön */
+    background-color: #6c757d;
+    color: #fff;
+    font-size: 18px;
+}
+/* Link hover stílusa */
+.navbar-nav .nav-link:hover {
+    background-color: rgb(131, 23, 131);
+    color: #fff;
+}
+
+
+/* Kereső űrlap és mező stílusok */
+.form-control{
+    border-radius: 25px;
+    background-color: #fff;
+    border: none;
+    box-shadow: 0px 0px 3px #bbb;
+}
+
+/* Kereső gomb stílusai */
+.btn-outline-success {
+    border-radius: 25px;
+    border: 2px solid #ccc;
+    color: #ccc;
+    background-color: #6c757d;
+    box-shadow: 0px 0px 3px #ccc;
+    margin-right: 10px;
+}
+.btn-outline-success:hover {
+    border-color: #ccc;
+    background-color: rgb(131, 23, 131);
+    color: #fff;
+}
+/* Focus stílus override (Bootstrap 5 felülírása) */
+.btn-outline-success:focus {
+    box-shadow: 0 0 0 0.2rem yellow;
+    background-color: yellow;
+    border-color: yellow; /* Hozzáadva a teljes override-hoz */
+}
+
+/* Legördülő menü stílusok */
+.dropdown{
+    margin-right: 10px;
+}
+.dropdown-toggle:hover{
+    background:rgb(131, 23, 131);
+}
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    z-index: 1000;
+    display: none;
+    float: left;
+    min-width: 10rem;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    font-size: 1rem;
+    color: #fff;
+    text-align: left;
+    list-style: none;
+    background-color: #6c757d;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.25rem;
+    overflow-y: auto;
+    max-height: 20rem;
+    left: auto;
+    right: 0;
+}
+.dropdown-menu a {
+    font-size: 18px;
+    color: #fff;
+    border-radius: 5%;
+}
+.dropdown-menu a:hover {
+    background-color: rgb(131, 23, 131);
+    color:#fff;
+}
+.dropdown-item{
+    width: 100%;
+    text-align: center; /* center helyett center a helyes érték */
+}
+/* ... A fejléc/avatar stílusok, amik nem relevánsak a lenyitáshoz ... */
+.header__sign-in {
+    border-radius: 20%;
+    border: 2px solid var(--main);
+    display: flex;
+}
+.header__sign-in .user-menu-avatar {
+    margin-left: 10pt;
+    height: 32px;
+    width: 32px;
+    background-color: #2e3648;
+    border-radius: 50% !important;
+}
+img {
+    vertical-align: middle;
+    border-style: none;
+}
+/* ... */
+
+
+/* --- MEDIA QUERY JAVÍTÁSOK --- */
+@media (max-width: 1100px) {
+    /* TÖRLÉS: NE állítsd be a display: none; stílust itt, mert a Bootstrap JS nem tudja felülírni! */
+    .navbar-collapse {
+        /* A flex/center stílusokat megtarthatod a lenyitott menü testreszabásához: */
+        display: flex;
+        flex-direction: column; /* Jobb, ha függőlegesen jelennek meg a menüpontok mobil nézetben */
+        justify-content: center;
+        padding: 20px;
+    }
+
+    /* A hamburger ikon háttérszíne */
+    .navbar-toggler {
+        background-color: rgb(131, 23, 131);
+    }
+
+    /* Menüpontok mobil nézetben */
+    .nav-item {
+        width: 100%; /* Kitölti a rendelkezésre álló teret */
+        text-align: center;
+        margin: 5px 0; /* Kisebb függőleges margó */
+    }
+
+    /* Kereső űrlap stílusa a lenyitott menüben (Bootstrap 5: .d-flex-et használsz helyette) */
+    .d-flex {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    /* Keresőmező mobil nézetben */
+    .form-control {
+        width: 200px;
+        margin-right: 5px; /* Kisebb margó a gomb előtt */
+    }
+
+    /* Kereső gomb mobil nézetben */
+    .btn-outline-success {
+        margin-right: 0; /* Nincs szükség rá, hogy jobb margója legyen */
+    }
+
+    /* A dropdown eltávolítva a fő navbar területről, és a lenyíló listában van.
+       Így ez a mobil stílus már nem releváns, kivéve ha más célra használod. */
+    .dropdown {
+        /* margin-left: 250px;  Valószínűleg csak manuális igazítás volt */
+    }
+}

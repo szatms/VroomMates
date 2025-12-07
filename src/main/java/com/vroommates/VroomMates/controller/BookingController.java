@@ -26,6 +26,16 @@ public class BookingController {
         return bookingService.leaveTrip(dto);
     }
 
+    @PostMapping("/{bookingId}/accept")
+    public BookingResponseDTO acceptBooking(@PathVariable Long bookingId) {
+        return bookingService.acceptBooking(bookingId);
+    }
+
+    // Sofőr elutasítja
+    @PostMapping("/{bookingId}/reject")
+    public BookingResponseDTO rejectBooking(@PathVariable Long bookingId) {
+        return bookingService.rejectBooking(bookingId);
+    }
     @GetMapping("/passengers/{tripId}")
     public List<PassengerResponseDTO> getPassengers(@PathVariable int tripId) {
         return bookingService.getPassengersForTrip(tripId);
