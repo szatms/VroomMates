@@ -29,29 +29,25 @@ public class UserService {
     // -----------------------------------------------------------
     public AuthResponseDTO register(UserCreateDTO dto) {
 
-        // email ütközés?
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
 
-        // jelszó hash
         String hashed = passwordEncoder.encode(dto.getPassword());
 
-        // DTO → Entity
         User user = userMapper.fromCreateDTO(dto, hashed);
 
-        // mentés
+        // 🔥 SZEREPKÖRÖK HELYES BEÁLLÍTÁSA 🔥
+        user.setIsDriver(dto.isDriver());
+        user.setIsAdmin(dto.isAdmin());
         userRepository.save(user);
 
-        // Entity → Response DTO
         UserResponseDTO response = userMapper.toResponseDTO(user);
 
-        // szerep meghatározása (mert kell a tokenhez)
-        String role = user.getIsAdmin() != null && user.getIsAdmin() ? "ADMIN"
-                : user.getIsDriver() != null && user.getIsDriver() ? "DRIVER"
+        String role = user.getIsAdmin() ? "ADMIN"
+                : user.getIsDriver() ? "DRIVER"
                 : "USER";
 
-        // token generálás
         String token = jwtService.generateToken(user.getUserId(), role);
 
         AuthResponseDTO auth = new AuthResponseDTO();
@@ -59,7 +55,6 @@ public class UserService {
         auth.setAccessToken(token);
 
         return auth;
-
     }
 
     // -----------------------------------------------------------

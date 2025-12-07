@@ -48,9 +48,9 @@ public class User {
     private String pfp;
 
     @Column(name = "distance")
-    private Integer distance;
+    private Integer distance = 0;
     @Column(name = "co2")
-    private Integer co2;
+    private Integer co2 = 0;
 
 
 }

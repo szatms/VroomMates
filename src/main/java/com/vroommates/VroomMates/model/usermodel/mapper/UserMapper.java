@@ -57,8 +57,12 @@ public class UserMapper {
         dto.setPfp(user.getPfp());
         dto.setCreatedAt(user.getCreatedAt());
 
+        dto.setDistance(user.getDistance() != null ? user.getDistance() : 0);
+        dto.setCo2(user.getCo2() != null ? user.getCo2() : 0);
+
         return dto;
     }
+
 
     // UPDATE DTO -> meglévő ENTITY módosítása
     public void updateEntityFromDTO(UserUpdateDTO dto, User user) {

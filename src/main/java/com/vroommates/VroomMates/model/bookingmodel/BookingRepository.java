@@ -1,6 +1,5 @@
 package com.vroommates.VroomMates.model.bookingmodel;
 
-import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.usermodel.User;
 import org.springframework.data.jpa.repository.JpaRepository;

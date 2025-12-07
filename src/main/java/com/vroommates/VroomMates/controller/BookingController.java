@@ -2,9 +2,12 @@ package com.vroommates.VroomMates.controller;
 
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingRequestDTO;
 import com.vroommates.VroomMates.model.bookingmodel.dto.BookingResponseDTO;
+import com.vroommates.VroomMates.model.bookingmodel.dto.PassengerResponseDTO;
 import com.vroommates.VroomMates.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -33,4 +36,9 @@ public class BookingController {
     public BookingResponseDTO rejectBooking(@PathVariable Long bookingId) {
         return bookingService.rejectBooking(bookingId);
     }
+    @GetMapping("/passengers/{tripId}")
+    public List<PassengerResponseDTO> getPassengers(@PathVariable int tripId) {
+        return bookingService.getPassengersForTrip(tripId);
+    }
+
 }

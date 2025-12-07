@@ -1,6 +1,7 @@
 package com.vroommates.VroomMates.service;
 
-import com.vroommates.VroomMates.model.bookingmodel.Booking;
+import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
+import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.tripmodel.dto.TripRequestDTO;
@@ -23,9 +24,27 @@ public class TripService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
+    private final BookingRepository bookingRepository;
     private final TripMapper tripMapper;
     private final BookingRepository bookingRepository;
     private final UserService userService;
+
+
+    private TripResponseDTO toTripDTOWithPassengers(Trip trip) {
+
+        int totalSeats = trip.getVehicle().getSeats();  // összes ülés (pl. 7)
+        int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
+        int passengerCount = activePassengers + 1;   // sofőr is számít!
+        int remainingSeats = totalSeats - passengerCount;
+
+        TripResponseDTO dto = tripMapper.toDTO(trip);
+        dto.setTotalSeats(totalSeats);
+        dto.setPassengerCount(passengerCount);
+        dto.setRemainingSeats(remainingSeats);
+        return dto;
+    }
+
+
 
     public TripResponseDTO createTrip(TripRequestDTO dto) {
 
@@ -40,21 +59,24 @@ public class TripService {
         trip.setVehicle(vehicle);
 
         Trip saved = tripRepository.save(trip);
-        return tripMapper.toDTO(saved);
+        return toTripDTOWithPassengers(saved);
     }
+
 
     public TripResponseDTO getTripById(int id) {
         Trip trip = tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
-        return tripMapper.toDTO(trip);
+        return toTripDTOWithPassengers(trip);
     }
+
 
     public List<TripResponseDTO> getAllTrips() {
         return tripRepository.findAll()
                 .stream()
-                .map(tripMapper::toDTO)
+                .map(this::toTripDTOWithPassengers)
                 .toList();
     }
+
 
     public TripResponseDTO updateTrip(int id, TripRequestDTO dto) {
 
@@ -70,40 +92,85 @@ public class TripService {
         existing.setDriver(driver);
         existing.setVehicle(vehicle);
         existing.setLive(dto.isLive());
+        existing.setDepartureTime(dto.getDepartureTime());
         existing.setStartLat(dto.getStartLat());
         existing.setStartLon(dto.getStartLon());
         existing.setEndLat(dto.getEndLat());
         existing.setEndLon(dto.getEndLon());
 
         Trip updated = tripRepository.save(existing);
-        return tripMapper.toDTO(updated);
+        return toTripDTOWithPassengers(updated);
     }
 
     public void deleteTrip(int id) {
         tripRepository.deleteById(id);
     }
 
-    public void finishTrip(int tripId) {
+// =========================
+// TRIP CLOSING + DISTANCE + CO2
+// =========================
+
+    public TripResponseDTO endTrip(int tripId) {
+
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
-        double distance = com.vroommates.VroomMates.util.DistanceCalculator.calculateDistance(
-                trip.getStartLat(), trip.getStartLon(),
-                trip.getEndLat(), trip.getEndLon()
-        );
-
-        // sofőr
-        userService.increaseUserCO2Stats(trip.getDriver(), distance);
-
-        // utasok
-        List<com.vroommates.VroomMates.model.bookingmodel.Booking> bookings =
-                bookingRepository.findByTripAndStatus(trip, com.vroommates.VroomMates.model.bookingmodel.BookingStatus.JOINED);
-
-        for (var booking : bookings) {
-            userService.increaseUserCO2Stats(booking.getUser(), distance);
+        if (!trip.isLive()) {
+            throw new RuntimeException("Trip already ended");
         }
 
+        // 1) Distance calculation
+        double distanceKm = haversine(
+                trip.getStartLat(),
+                trip.getStartLon(),
+                trip.getEndLat(),
+                trip.getEndLon()
+        );
+
+        // 2) CO2 calculation (0.12 kg/km)
+        double co2 = distanceKm * 0.12;
+
+        // 3) Trip markings
         trip.setLive(false);
         tripRepository.save(trip);
+
+        // 4) Driver stat update
+        User driver = trip.getDriver();
+        if (driver.getDistance() == null) driver.setDistance(0);
+        if (driver.getCo2() == null) driver.setCo2(0);
+
+        int newDistance = driver.getDistance() + (int) distanceKm;
+        int newCo2 = driver.getCo2() + (int) co2;
+
+        driver.setDistance(newDistance);
+        driver.setCo2(newCo2);
+        userRepository.save(driver);
+
+        // 5) ResponseDTO
+        TripResponseDTO dto = toTripDTOWithPassengers(trip);
+        dto.setDistance(distanceKm);
+        dto.setCo2(co2);
+
+        return dto;
+    }
+
+
+// =========================
+// HAVERSINE
+// =========================
+
+    private double haversine(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in km
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
     }
 }

@@ -1,15 +1,19 @@
 package com.vroommates.VroomMates.config;
 
+import com.vroommates.VroomMates.security.CustomUserDetailsService;
 import com.vroommates.VroomMates.security.JwtAuthenticationFilter;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -19,51 +23,54 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final CustomUserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // Nem használunk session-t → JWT van
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // CSRF kikapcsolása REST API-hoz
+                // REST API → stateless + CSRF off
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
-                // Milyen endpointok legyenek szabadok?
+                // 🔐 Auth szabályok – most direkt egyszerűre vesszük:
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // EZEK JÖNNEK ELŐSZÖR!
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/driver/**").hasAnyRole("DRIVER", "ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "DRIVER", "ADMIN")
-
-                        // EZ JÖN UTÁNA, HOGY NE FOGJA ELŐBB EL AZ /api/admin-t:
+                        // minden más API-hoz elég, ha be vagy jelentkezve JWT-vel
                         .requestMatchers("/api/**").authenticated()
-
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
 
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("Unauthorized");
-                        })
-                )
-                // Form login és HTTP Basic OFF
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
+                // 🔐 AuthenticationProvider – ez köti be a CustomUserDetailsService-et
+                .authenticationProvider(authenticationProvider())
 
-        // JWT Filter hozzáadása a Spring Security filterláncához
-        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // 🔐 JWT filter a láncba
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // AuthenticationManager bean (szükséges a Spring Security újabb verzióiban)
+    // Itt mondjuk meg Spring-nek, hogyan töltse be a usert és hogyan ellenőrizze a jelszót
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationProvider authenticationProvider() {
+        // A TE Spring Security verziód alapján: CSAK 1 paraméteres konstruktor van
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    // Ha valahol AuthenticationManager kell (pl. login service-ben), innen jön
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
+            throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    // Bcrypt hashelés (már használod)
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
