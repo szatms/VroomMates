@@ -99,8 +99,75 @@ public class TripService {
         return toTripDTOWithPassengers(updated);
     }
 
-
     public void deleteTrip(int id) {
         tripRepository.deleteById(id);
+    }
+
+// =========================
+// TRIP CLOSING + DISTANCE + CO2
+// =========================
+
+    public TripResponseDTO endTrip(int tripId) {
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        if (!trip.isLive()) {
+            throw new RuntimeException("Trip already ended");
+        }
+
+        // 1) Distance calculation
+        double distanceKm = haversine(
+                trip.getStartLat(),
+                trip.getStartLon(),
+                trip.getEndLat(),
+                trip.getEndLon()
+        );
+
+        // 2) CO2 calculation (0.12 kg/km)
+        double co2 = distanceKm * 0.12;
+
+        // 3) Trip markings
+        trip.setLive(false);
+        tripRepository.save(trip);
+
+        // 4) Driver stat update
+        User driver = trip.getDriver();
+        if (driver.getDistance() == null) driver.setDistance(0);
+        if (driver.getCo2() == null) driver.setCo2(0);
+
+        int newDistance = driver.getDistance() + (int) distanceKm;
+        int newCo2 = driver.getCo2() + (int) co2;
+
+        driver.setDistance(newDistance);
+        driver.setCo2(newCo2);
+        userRepository.save(driver);
+
+        // 5) ResponseDTO
+        TripResponseDTO dto = toTripDTOWithPassengers(trip);
+        dto.setDistance(distanceKm);
+        dto.setCo2(co2);
+
+        return dto;
+    }
+
+
+// =========================
+// HAVERSINE
+// =========================
+
+    private double haversine(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in km
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
     }
 }

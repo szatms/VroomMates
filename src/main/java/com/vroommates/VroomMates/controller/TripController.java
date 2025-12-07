@@ -42,4 +42,9 @@ public class TripController {
     public void deleteTrip(@PathVariable int id) {
         tripService.deleteTrip(id);
     }
+
+    @PostMapping("/{id}/end")
+    public TripResponseDTO endTrip(@PathVariable int id) {
+        return tripService.endTrip(id);
+    }
 }

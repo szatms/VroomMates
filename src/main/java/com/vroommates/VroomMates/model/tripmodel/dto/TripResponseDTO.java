@@ -2,7 +2,6 @@ package com.vroommates.VroomMates.model.tripmodel.dto;
 
 import lombok.Builder;
 import lombok.Data;
-
 import java.time.LocalDateTime;
 
 @Data
@@ -24,4 +23,8 @@ public class TripResponseDTO {
     private int totalSeats;
     private int passengerCount;
     private int remainingSeats;
+
+    // NEW
+    private double distance;
+    private double co2;
 }

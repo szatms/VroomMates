@@ -22,4 +22,5 @@ public class UserCreateDTO {
     private String password;
 
     private boolean driver;
+    private boolean admin;
 }

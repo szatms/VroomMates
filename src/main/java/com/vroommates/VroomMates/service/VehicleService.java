@@ -22,20 +22,15 @@ public class VehicleService {
 
     public VehicleResponseDTO createVehicle(VehicleRequestDTO dto) {
 
-        // 1) Owner lekérése az ID alapján
         User owner = userRepository.findById(dto.getOwnerID())
-                .orElseThrow(() -> new RuntimeException("Owner not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2) Entity létrehozása mapperrel
         Vehicle vehicle = vehicleMapper.toEntity(dto);
-
-        // 3) Owner beállítása
         vehicle.setOwner(owner);
 
-        // 4) Mentés
-        Vehicle saved = vehicleRepository.save(vehicle);
+        vehicleRepository.save(vehicle);
 
-        return vehicleMapper.toDTO(saved);
+        return vehicleMapper.toDTO(vehicle);
     }
 
     public VehicleResponseDTO getVehicle(String plate) {
