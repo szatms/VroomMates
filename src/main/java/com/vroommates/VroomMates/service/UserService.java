@@ -128,17 +128,4 @@ public class UserService {
         return userMapper.toResponseDTO(securityUser.getUser());
     }
 
-    public void increaseUserCO2Stats(User user, double tripDistanceKm) {
-        // Távolság növelése
-        int currentDist = user.getDistance() != null ? user.getDistance() : 0;
-        user.setDistance(currentDist + (int) tripDistanceKm);
-
-        // CO2 növelése
-        int co2Saved = com.vroommates.VroomMates.util.DistanceCalculator.calculateCo2Saved(tripDistanceKm);
-        int currentCo2 = user.getCo2() != null ? user.getCo2() : 0;
-        user.setCo2(currentCo2 + co2Saved);
-
-        userRepository.save(user);
-    }
-
 }
