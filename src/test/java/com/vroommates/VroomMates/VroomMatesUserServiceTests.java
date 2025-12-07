@@ -25,19 +25,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class VroomMatesUserServiceTests {
     @Mock
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Mock
-    UserMapper userMapper;
+    private UserMapper userMapper;
 
     @Mock
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Mock
-    JwtService jwtService;
+    private JwtService jwtService;
 
     @InjectMocks
-    UserService userService;
+    private UserService userService;
 
     // REGISTRATION TESTS
     @Test
