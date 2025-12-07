@@ -42,6 +42,22 @@ CREATE TABLE `user` (
   `updatedAt` datetime DEFAULT NULL,
   PRIMARY KEY (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE rating (
+    ratingId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    rater_user_id INT NOT NULL,
+    rated_user_id INT NOT NULL,
+    trip_id INT NOT NULL,
+    score INT NOT NULL,
+    comment VARCHAR(255),
+    isDriverRating BOOLEAN,
+    createdAt DATETIME,
+
+    CONSTRAINT fk_rater FOREIGN KEY (rater_user_id) REFERENCES user(userId),
+    CONSTRAINT fk_rated FOREIGN KEY (rated_user_id) REFERENCES user(userId),
+    CONSTRAINT fk_trip FOREIGN KEY (trip_id) REFERENCES trip(tripID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
