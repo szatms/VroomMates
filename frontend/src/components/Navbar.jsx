@@ -25,7 +25,7 @@ const Navbar = () => {
 
                     <ul className="navbar-nav me-auto my-2 navbar-nav-scroll" style={{ "--bs-scroll-height": "100px" }}>
                         <li className="nav-item">
-                            <a className="nav-link active" href="/filmek">Térkép</a>
+                            <a className="nav-link active" href="/map">Térkép</a>
                         </li>
                         <li className="nav-item">
                             <a className="nav-link" href="/szures">Sofőrök</a>
