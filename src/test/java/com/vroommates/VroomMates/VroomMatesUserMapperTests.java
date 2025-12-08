@@ -6,9 +6,7 @@ import com.vroommates.VroomMates.model.usermodel.dto.UserUpdateDTO;
 import com.vroommates.VroomMates.model.usermodel.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.time.LocalDateTime;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class VroomMatesUserMapperTests {

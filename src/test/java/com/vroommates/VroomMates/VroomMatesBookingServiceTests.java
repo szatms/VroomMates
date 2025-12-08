@@ -11,7 +11,6 @@ import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.usermodel.User;
 import com.vroommates.VroomMates.model.usermodel.UserRepository;
-
 import com.vroommates.VroomMates.model.vehiclemodel.Vehicle;
 import com.vroommates.VroomMates.service.BookingService;
 import org.junit.jupiter.api.AfterEach;
@@ -24,11 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
