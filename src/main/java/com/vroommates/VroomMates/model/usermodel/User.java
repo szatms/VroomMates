@@ -9,15 +9,15 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @ToString
-@EqualsAndHashCode(callSuper = false) // Csak ha van öröklés
-@NoArgsConstructor // A JPA-nak kell
+@EqualsAndHashCode(callSuper = false)
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer userId; //
+    private Integer userId;
 
     private Boolean isAdmin;
     private Boolean isDriver;

@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 public class Trip {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int tripID;
 
     @ManyToOne
