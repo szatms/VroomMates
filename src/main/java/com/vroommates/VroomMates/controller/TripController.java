@@ -47,4 +47,14 @@ public class TripController {
     public TripResponseDTO endTrip(@PathVariable int id) {
         return tripService.endTrip(id);
     }
+
+    @GetMapping("/search")
+    public List<TripResponseDTO> searchTrips(
+            @RequestParam double startLat,
+            @RequestParam double startLon,
+            @RequestParam double endLat,
+            @RequestParam double endLon
+    ) {
+        return tripService.searchTrips(startLat, startLon, endLat, endLon);
+    }
 }
