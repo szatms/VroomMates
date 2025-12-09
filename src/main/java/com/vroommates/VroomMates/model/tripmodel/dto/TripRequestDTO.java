@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class TripRequestDTO {
     private int driverID;
-    private String vehiclePlate;
+    //private String vehiclePlate;
     private boolean isLive;
 
     private LocalDateTime departureTime;

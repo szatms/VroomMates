@@ -47,8 +47,9 @@ public class TripService {
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
-        Vehicle vehicle = vehicleRepository.findById(dto.getVehiclePlate())
-                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+        // Sofőrhöz tartozó autó automatikus keresése
+        Vehicle vehicle = vehicleRepository.findFirstByOwner(driver)
+                .orElseThrow(() -> new RuntimeException("Driver has no registered vehicle"));
 
         Trip trip = tripMapper.toEntity(dto);
         trip.setDriver(driver);
@@ -79,8 +80,8 @@ public class TripService {
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
-        Vehicle vehicle = vehicleRepository.findById(dto.getVehiclePlate())
-                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+        Vehicle vehicle = vehicleRepository.findFirstByOwner(driver)
+                .orElseThrow(() -> new RuntimeException("Driver has no registered vehicle"));
 
         existing.setDriver(driver);
         existing.setVehicle(vehicle);
@@ -90,11 +91,13 @@ public class TripService {
         existing.setStartLon(dto.getStartLon());
         existing.setEndLat(dto.getEndLat());
         existing.setEndLon(dto.getEndLon());
-        existing.setTripMessage(dto.getTripMessage()); // ÚJ
+        //tripMessage:
+        existing.setTripMessage(dto.getTripMessage());
 
         Trip updated = tripRepository.save(existing);
         return toTripDTOWithPassengers(updated);
     }
+
 
     public void deleteTrip(int id) {
         tripRepository.deleteById(id);
