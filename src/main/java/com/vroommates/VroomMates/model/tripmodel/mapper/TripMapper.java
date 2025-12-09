@@ -16,6 +16,7 @@ public class TripMapper {
                 .startLon(dto.getStartLon())
                 .endLat(dto.getEndLat())
                 .endLon(dto.getEndLon())
+                .tripMessage(dto.getTripMessage())   // ÚJ
                 .build();
     }
 
@@ -30,6 +31,8 @@ public class TripMapper {
                 .startLon(entity.getStartLon())
                 .endLat(entity.getEndLat())
                 .endLon(entity.getEndLon())
+                .tripMessage(entity.getTripMessage()) // ÚJ
                 .build();
     }
 }
+

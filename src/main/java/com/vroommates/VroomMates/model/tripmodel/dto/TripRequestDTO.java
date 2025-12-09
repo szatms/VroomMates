@@ -17,4 +17,6 @@ public class TripRequestDTO {
 
     private double endLat;
     private double endLon;
+
+    private String tripMessage;
 }

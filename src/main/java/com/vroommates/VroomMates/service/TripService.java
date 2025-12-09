@@ -90,6 +90,7 @@ public class TripService {
         existing.setStartLon(dto.getStartLon());
         existing.setEndLat(dto.getEndLat());
         existing.setEndLon(dto.getEndLon());
+        existing.setTripMessage(dto.getTripMessage()); // ÚJ
 
         Trip updated = tripRepository.save(existing);
         return toTripDTOWithPassengers(updated);

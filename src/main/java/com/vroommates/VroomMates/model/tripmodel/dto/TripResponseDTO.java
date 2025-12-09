@@ -26,4 +26,6 @@ public class TripResponseDTO {
 
     private double distance;
     private double co2;
+
+    private String tripMessage;
 }
