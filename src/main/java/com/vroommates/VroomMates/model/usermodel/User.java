@@ -17,7 +17,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer userId; //
+    private Integer userId;
 
     private Boolean isAdmin;
     private Boolean isDriver;
