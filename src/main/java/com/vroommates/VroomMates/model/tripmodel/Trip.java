@@ -37,4 +37,6 @@ public class Trip {
     //end coordinates
     private double endLat;
     private double endLon;
+
+    private String tripMessage;
 }
