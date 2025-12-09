@@ -22,7 +22,7 @@ public class Trip {
 
     @ManyToOne
     private User driver;
-    private boolean isLive;
+    private boolean isLive = true;
 
     @ManyToOne
     @JoinColumn(name = "vehicle_plate")

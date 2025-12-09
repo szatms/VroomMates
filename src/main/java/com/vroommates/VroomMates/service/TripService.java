@@ -11,7 +11,6 @@ import com.vroommates.VroomMates.model.usermodel.User;
 import com.vroommates.VroomMates.model.usermodel.UserRepository;
 import com.vroommates.VroomMates.model.vehiclemodel.Vehicle;
 import com.vroommates.VroomMates.model.vehiclemodel.VehicleRepository;
-import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import com.vroommates.VroomMates.util.DistanceCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,7 @@ public class TripService {
 
         int totalSeats = trip.getVehicle().getSeats();
         int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
-        int passengerCount = activePassengers + 1; // sofőr is számít
+        int passengerCount = activePassengers + 1;   // sofőr is számít!
         int remainingSeats = totalSeats - passengerCount;
 
         TripResponseDTO dto = tripMapper.toDTO(trip);
@@ -47,7 +46,7 @@ public class TripService {
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
-        // Sofőrhöz tartozó autó automatikus keresése
+        // Sofőr autójának automatikus hozzárendelése
         Vehicle vehicle = vehicleRepository.findFirstByOwner(driver)
                 .orElseThrow(() -> new RuntimeException("Driver has no registered vehicle"));
 
@@ -72,6 +71,9 @@ public class TripService {
                 .toList();
     }
 
+    // =========================
+    // TRIP UPDATE
+    // =========================
     public TripResponseDTO updateTrip(int id, TripRequestDTO dto) {
 
         Trip existing = tripRepository.findById(id)
@@ -80,85 +82,41 @@ public class TripService {
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
+        // Sofőr aktuális autójának lekérése
         Vehicle vehicle = vehicleRepository.findFirstByOwner(driver)
                 .orElseThrow(() -> new RuntimeException("Driver has no registered vehicle"));
 
         existing.setDriver(driver);
         existing.setVehicle(vehicle);
-        existing.setLive(dto.isLive());
+
+        if (dto.getIsLive() != null) {
+            existing.setLive(dto.getIsLive());
+        }
+
         existing.setDepartureTime(dto.getDepartureTime());
         existing.setStartLat(dto.getStartLat());
         existing.setStartLon(dto.getStartLon());
         existing.setEndLat(dto.getEndLat());
         existing.setEndLon(dto.getEndLon());
-        //tripMessage:
         existing.setTripMessage(dto.getTripMessage());
 
         Trip updated = tripRepository.save(existing);
         return toTripDTOWithPassengers(updated);
     }
 
-
     public void deleteTrip(int id) {
         tripRepository.deleteById(id);
     }
 
     // =========================
-    // TRIP CLOSING + DISTANCE + CO2
+    // TRIP SEARCH (10 km-es körzet)
     // =========================
-
-    public TripResponseDTO endTrip(int tripId) {
-
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found"));
-
-        if (!trip.isLive()) {
-            throw new RuntimeException("Trip already ended");
-        }
-
-        // 1) Distance calculation
-        double distanceKm = DistanceCalculator.calculateDistance(
-                trip.getStartLat(),
-                trip.getStartLon(),
-                trip.getEndLat(),
-                trip.getEndLon()
-        );
-
-        // 2) CO2 calculation (0.12 kg/km)
-        double co2 = distanceKm * 0.12;
-
-        // 3) Trip markings
-        trip.setLive(false);
-        tripRepository.save(trip);
-
-        // 4) Driver stat update
-        User driver = trip.getDriver();
-
-        double newDistance = driver.getDistance() + distanceKm;
-        double newCo2 = driver.getCo2() + co2;
-
-        driver.setDistance(newDistance);
-        driver.setCo2(newCo2);
-        userRepository.save(driver);
-
-        // 5) ResponseDTO
-        TripResponseDTO dto = toTripDTOWithPassengers(trip);
-        dto.setDistance(distanceKm);
-        dto.setCo2(co2);
-
-        return dto;
-    }
-
-    // =========================
-    // TRIP SEARCH (10 km radius)
-    // =========================
-
     public List<TripResponseDTO> searchTrips(double startLat, double startLon,
                                              double endLat, double endLon) {
 
-        double delta = 0.1; // -+ 11 km bounding box
+        double delta = 0.1; // kb. ±11 km bounding box
 
-        // 1) DB pre-search
+        // 1) Előszűrés DB-ben
         List<Trip> raw = tripRepository.searchByBoundingBox(
                 startLat - delta, startLat + delta,
                 startLon - delta, startLon + delta,
@@ -169,7 +127,6 @@ public class TripService {
         // 2) Valós távolságvizsgálat (10 km-en belül)
         return raw.stream()
                 .filter(t -> {
-
                     double startDist = DistanceCalculator.haversine(
                             startLat, startLon,
                             t.getStartLat(), t.getStartLon()
@@ -186,4 +143,45 @@ public class TripService {
                 .toList();
     }
 
+    // =========================
+    // TRIP CLOSING + DISTANCE + CO2
+    // =========================
+
+    public TripResponseDTO endTrip(int tripId) {
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        if (!trip.isLive()) {
+            throw new RuntimeException("Trip already ended");
+        }
+
+        // Distance calculation
+        double distanceKm = DistanceCalculator.calculateDistance(
+                trip.getStartLat(),
+                trip.getStartLon(),
+                trip.getEndLat(),
+                trip.getEndLon()
+        );
+
+        double co2 = distanceKm * 0.12;
+
+        trip.setLive(false);
+        tripRepository.save(trip);
+
+        User driver = trip.getDriver();
+
+        double newDistance = driver.getDistance() + distanceKm;
+        double newCo2 = driver.getCo2() + co2;
+
+        driver.setDistance(newDistance);
+        driver.setCo2(newCo2);
+        userRepository.save(driver);
+
+        TripResponseDTO dto = toTripDTOWithPassengers(trip);
+        dto.setDistance(distanceKm);
+        dto.setCo2(co2);
+
+        return dto;
+    }
 }
