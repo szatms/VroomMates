@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import '../assets/style/vehicle.css'; // A stílus importálása
+import './vehicle.css';
 
 const Vehicle = () => {
-    // State az űrlap adatoknak
     const [vehicleData, setVehicleData] = useState({
         plate: '',
         seats: '',
@@ -10,28 +9,37 @@ const Vehicle = () => {
         model: '',
         year: '',
         colour: '',
-        fuel: 'Benzin', // Alapértelmezett érték
+        fuel: 'Benzin',
         picture: null
     });
 
     const [message, setMessage] = useState({ type: '', text: '' });
     const [loading, setLoading] = useState(false);
+    const [ownerID, setOwnerID] = useState(null);
 
-    // Kezeljük a beviteli mezők változását
+    useEffect(() => {
+        // Kiolvassuk az elmentett adatokat
+        const storedUserId = localStorage.getItem('userId');
+        const token = localStorage.getItem('token'); // Ez tartalmazza majd az "accessToken"-t
+
+        // Ellenőrzés
+        if (!token || !storedUserId) {
+            setMessage({
+                type: 'error',
+                text: 'Hiba: Nem vagy bejelentkezve. Kérlek, jelentkezz be újra!'
+            });
+        } else {
+            setOwnerID(storedUserId);
+        }
+    }, []);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setVehicleData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setVehicleData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Kezeljük a fájl feltöltést
     const handleFileChange = (e) => {
-        setVehicleData(prev => ({
-            ...prev,
-            picture: e.target.files[0]
-        }));
+        setVehicleData(prev => ({ ...prev, picture: e.target.files[0] }));
     };
 
     const handleSubmit = async (e) => {
@@ -39,17 +47,14 @@ const Vehicle = () => {
         setLoading(true);
         setMessage({ type: '', text: '' });
 
-        // Token és UserID lekérése a localStorage-ból
         const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId'); // Feltételezzük, hogy login-kor elmentetted az ID-t
 
-        if (!token || !userId) {
-            setMessage({ type: 'error', text: 'Nem vagy bejelentkezve!' });
+        if (!ownerID || !token) {
+            setMessage({ type: 'error', text: 'Hiányzó bejelentkezési adatok.' });
             setLoading(false);
             return;
         }
 
-        // FormData létrehozása a képküldés miatt
         const formData = new FormData();
         formData.append('plate', vehicleData.plate);
         formData.append('seats', vehicleData.seats);
@@ -59,19 +64,19 @@ const Vehicle = () => {
         formData.append('colour', vehicleData.colour);
         formData.append('fuel', vehicleData.fuel);
 
-        // A kért ownerID hozzáadása
-        formData.append('ownerID', userId);
+        // FONTOS: Itt csatoljuk a bejelentkezéskor elmentett userId-t
+        formData.append('ownerID', ownerID);
 
         if (vehicleData.picture) {
             formData.append('picture', vehicleData.picture);
         }
 
         try {
-            // API hívás (cseréld le a URL-t a saját backend végpontodra)
+            // Cseréld le a URL-t a sajátodra
             const response = await fetch('http://localhost:5000/api/vehicles', {
                 method: 'POST',
                 headers: {
-                    // 'Content-Type': 'multipart/form-data', // FONTOS: Fetchnél ne állítsd be manuálisan, ha FormData-t használsz!
+                    // A token itt kerül beillesztésre
                     'Authorization': `Bearer ${token}`
                 },
                 body: formData
@@ -79,7 +84,6 @@ const Vehicle = () => {
 
             if (response.ok) {
                 setMessage({ type: 'success', text: 'Jármű sikeresen rögzítve!' });
-                // Form ürítése
                 setVehicleData({
                     plate: '', seats: '', make: '', model: '', year: '', colour: '', fuel: 'Benzin', picture: null
                 });
@@ -88,6 +92,7 @@ const Vehicle = () => {
                 setMessage({ type: 'error', text: errorData.message || 'Hiba történt a mentés során.' });
             }
         } catch (error) {
+            console.error(error);
             setMessage({ type: 'error', text: 'Nem sikerült csatlakozni a szerverhez.' });
         } finally {
             setLoading(false);
@@ -107,13 +112,10 @@ const Vehicle = () => {
 
                 <form onSubmit={handleSubmit}>
                     <div className="row">
-                        {/* Rendszám */}
                         <div className="col-md-6 mb-3">
                             <label className="form-label">Rendszám</label>
                             <input type="text" className="form-control" name="plate" value={vehicleData.plate} onChange={handleChange} required placeholder="AAA-000" />
                         </div>
-
-                        {/* Férőhelyek */}
                         <div className="col-md-6 mb-3">
                             <label className="form-label">Férőhelyek száma</label>
                             <input type="number" className="form-control" name="seats" value={vehicleData.seats} onChange={handleChange} required min="1" placeholder="4" />
@@ -121,13 +123,10 @@ const Vehicle = () => {
                     </div>
 
                     <div className="row">
-                        {/* Márka */}
                         <div className="col-md-6 mb-3">
-                            <label className="form-label">Márka (Make)</label>
+                            <label className="form-label">Márka</label>
                             <input type="text" className="form-control" name="make" value={vehicleData.make} onChange={handleChange} required placeholder="pl. Toyota" />
                         </div>
-
-                        {/* Modell */}
                         <div className="col-md-6 mb-3">
                             <label className="form-label">Modell</label>
                             <input type="text" className="form-control" name="model" value={vehicleData.model} onChange={handleChange} required placeholder="pl. Corolla" />
@@ -135,20 +134,16 @@ const Vehicle = () => {
                     </div>
 
                     <div className="row">
-                        {/* Évjárat */}
                         <div className="col-md-6 mb-3">
                             <label className="form-label">Évjárat</label>
                             <input type="number" className="form-control" name="year" value={vehicleData.year} onChange={handleChange} required min="1900" max={new Date().getFullYear() + 1} />
                         </div>
-
-                        {/* Szín */}
                         <div className="col-md-6 mb-3">
                             <label className="form-label">Szín</label>
                             <input type="text" className="form-control" name="colour" value={vehicleData.colour} onChange={handleChange} required placeholder="pl. Ezüst" />
                         </div>
                     </div>
 
-                    {/* Üzemanyag */}
                     <div className="mb-3">
                         <label className="form-label">Üzemanyag</label>
                         <select className="form-select" name="fuel" value={vehicleData.fuel} onChange={handleChange}>
@@ -160,13 +155,12 @@ const Vehicle = () => {
                         </select>
                     </div>
 
-                    {/* Kép feltöltés */}
                     <div className="mb-4">
                         <label className="form-label">Jármű képe</label>
                         <input type="file" className="form-control" accept="image/*" onChange={handleFileChange} required />
                     </div>
 
-                    <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading}>
+                    <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading || !ownerID}>
                         {loading ? 'Mentés folyamatban...' : 'Jármű Hozzáadása'}
                     </button>
                 </form>

@@ -22,6 +22,7 @@ export default function Login() {
             });
             if (data && data.accessToken) {
                 localStorage.setItem("token", data.accessToken);
+                localStorage.setItem("userId", data.user.userId)
                 navigate("/user/profil");
             }
         } catch (error) {
