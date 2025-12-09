@@ -5,7 +5,6 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents 
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Ikon javítás
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -23,13 +22,12 @@ function ChangeView({ center, zoom }) {
     return null;
 }
 
-// Kattintás figyelő: Frissíti a koordinátát ÉS a szöveget is
 function LocationSelector({ setOrigin, setDest, originPos, destPos }) {
     useMapEvents({
         click(e) {
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;
-            const text = `${lat.toFixed(5)}, ${lon.toFixed(5)}`; // Koordináta szövegként
+            const text = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 
             if (!originPos) {
                 setOrigin({ pos: [lat, lon], text: text });
@@ -42,19 +40,19 @@ function LocationSelector({ setOrigin, setDest, originPos, destPos }) {
 }
 
 export default function Map() {
-    // Összevont state: Text (amit látsz) + Pos (ami a matekhoz kell)
     const [origin, setOrigin] = useState({ text: "", pos: null });
     const [dest, setDest] = useState({ text: "", pos: null });
-
-    // ÚJ STATE A KOMMENTNEK
     const [comment, setComment] = useState("");
+
+    // --- VÁLTOZÁS: Külön dátum és külön idő state ---
+    const [tripDate, setTripDate] = useState(""); // Pl: "2025-02-01"
+    const [tripTime, setTripTime] = useState(""); // Pl: "09:00"
 
     const [routePath, setRoutePath] = useState([]);
     const [loading, setLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]);
     const [zoom, setZoom] = useState(13);
 
-    // NOMINATIM: Szöveg -> Koordináta átalakító
     const geocode = async (searchText, type) => {
         if (!searchText) return;
         try {
@@ -64,10 +62,9 @@ export default function Map() {
                 const lat = parseFloat(data[0].lat);
                 const lon = parseFloat(data[0].lon);
 
-                // Frissítjük a megfelelő state-et a kapott koordinátával
                 if (type === 'origin') {
                     setOrigin(prev => ({ ...prev, pos: [lat, lon] }));
-                    setMapCenter([lat, lon]); // Odaugrunk
+                    setMapCenter([lat, lon]);
                 } else {
                     setDest(prev => ({ ...prev, pos: [lat, lon] }));
                 }
@@ -77,7 +74,6 @@ export default function Map() {
         }
     };
 
-    // Ha kimegy a fókusz a mezőből (blur), vagy Entert nyomsz, keressen rá
     const handleSearch = (e, type) => {
         if (e.key === 'Enter' || e.type === 'blur') {
             geocode(type === 'origin' ? origin.text : dest.text, type);
@@ -87,17 +83,26 @@ export default function Map() {
     const handleReset = () => {
         setOrigin({ text: "", pos: null });
         setDest({ text: "", pos: null });
-        setComment(""); // Komment törlése resetkor
+        setComment("");
+        // Mindkét mezőt töröljük
+        setTripDate("");
+        setTripTime("");
         setRoutePath([]);
     };
 
     const handleCreateTrip = async () => {
         if (!origin.pos || !dest.pos) {
-            alert("Kérlek adj meg érvényes indulási és érkezési pontot (kattintással vagy kereséssel)!");
+            alert("Kérlek adj meg érvényes indulási és érkezési pontot!");
             return;
         }
 
-        const userId = localStorage.getItem('userId');
+        // Ellenőrizzük mindkét mezőt
+        if (!tripDate || !tripTime) {
+            alert("Kérlek add meg a dátumot és az időpontot is!");
+            return;
+        }
+
+        const ownerID = localStorage.getItem('userId');
         const userRole = localStorage.getItem('role');
         const token = localStorage.getItem('token');
 
@@ -108,9 +113,14 @@ export default function Map() {
 
         setLoading(true);
 
-        // 1. Backend mentés
+        // --- ÖSSZEFŰZÉS ---
+        // tripDate: "2025-02-01"
+        // tripTime: "09:00"
+        // Eredmény: "2025-02-01T09:00:00"
+        const finalDateTime = `${tripDate}T${tripTime}:00`;
+
         try {
-            await fetch('api/trips', {
+            await fetch('http://localhost:5000/api/trip', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -121,15 +131,15 @@ export default function Map() {
                     startLon: origin.pos[1],
                     destLat: dest.pos[0],
                     destLon: dest.pos[1],
-                    userId: userId, // JAVÍTVA: itt 'userid' volt kisbetűvel, ami hibát dobott volna
-                    comment: comment // ÚJ ADAT: a megjegyzés küldése
+                    ownerID: ownerID,
+                    comment: comment,
+                    startTime: finalDateTime // A kész formátumot küldjük
                 })
             });
         } catch (error) {
             console.warn("Backend hiba (de a rajzolást folytatjuk):", error);
         }
 
-        // 2. OSRM Rajzolás
         try {
             const url = `https://router.project-osrm.org/route/v1/driving/${origin.pos[1]},${origin.pos[0]};${dest.pos[1]},${dest.pos[0]}?overview=full&geometries=geojson`;
             const response = await fetch(url);
@@ -142,12 +152,15 @@ export default function Map() {
                 alert("Nem található útvonal.");
             }
         } catch (error) {
-            // Fallback: Egyenes vonal
             setRoutePath([origin.pos, dest.pos]);
         } finally {
             setLoading(false);
         }
     };
+
+    // Mai nap lekérése stringként (YYYY-MM-DD) a "min" attribútumhoz,
+    // hogy ne lehessen múltbeli dátumot választani.
+    const today = new Date().toISOString().split('T')[0];
 
     return (
         <>
@@ -158,16 +171,16 @@ export default function Map() {
 
                     <div className="travel-form d-flex flex-column gap-3">
                         <div className="text-center small text-muted mb-2">
-                            Írd be a címet és nyomj Entert, VAGY kattints a térképre!
+                            Töltsd ki az adatokat és kattints a térképre!
                         </div>
 
-                        {/* ORIGIN INPUT */}
+                        {/* INDULÁS HELYE */}
                         <div className="input-wrapper">
-                            <label className="small fw-bold text-secondary">Indulás:</label>
+                            <label className="small fw-bold text-secondary">Indulás helye:</label>
                             <input
                                 type="text"
                                 className="form-control map-input"
-                                placeholder="Pl. Debrecen (vagy kattints)"
+                                placeholder="Pl. Debrecen"
                                 value={origin.text}
                                 onChange={(e) => setOrigin({ ...origin, text: e.target.value })}
                                 onKeyDown={(e) => handleSearch(e, 'origin')}
@@ -175,13 +188,13 @@ export default function Map() {
                             />
                         </div>
 
-                        {/* DEST INPUT */}
+                        {/* ÉRKEZÉS HELYE */}
                         <div className="input-wrapper">
-                            <label className="small fw-bold text-secondary">Érkezés:</label>
+                            <label className="small fw-bold text-secondary">Érkezés helye:</label>
                             <input
                                 type="text"
                                 className="form-control map-input"
-                                placeholder="Pl. Budapest (vagy kattints)"
+                                placeholder="Pl. Budapest"
                                 value={dest.text}
                                 onChange={(e) => setDest({ ...dest, text: e.target.value })}
                                 onKeyDown={(e) => handleSearch(e, 'dest')}
@@ -189,13 +202,42 @@ export default function Map() {
                             />
                         </div>
 
-                        {/* ÚJ MEZŐ: KOMMENT */}
+                        {/* --- KÉT KÜLÖN MEZŐ --- */}
+                        <div className="row">
+                            <div className="col-7">
+                                <div className="input-wrapper">
+                                    <label className="small fw-bold text-secondary">Dátum:</label>
+                                    <input
+                                        type="date"
+                                        className="form-control map-input"
+                                        value={tripDate}
+                                        min={today} // Nem enged múltbeli dátumot
+                                        onChange={(e) => setTripDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="col-5">
+                                <div className="input-wrapper">
+                                    <label className="small fw-bold text-secondary">Idő:</label>
+                                    <input
+                                        type="time"
+                                        className="form-control map-input"
+                                        value={tripTime}
+                                        onChange={(e) => setTripTime(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* KOMMENT */}
                         <div className="input-wrapper">
-                            <label className="small fw-bold text-secondary">Megjegyzés (opcionális):</label>
+                            <label className="small fw-bold text-secondary">Megjegyzés:</label>
                             <textarea
                                 className="form-control map-input"
-                                placeholder="Pl. Nem dohányzó, indulás pontosan, csomagok..."
-                                rows="3"
+                                placeholder="Pl. Csomagok, kisállat..."
+                                rows="2"
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
                                 style={{ resize: 'none' }}
@@ -207,7 +249,7 @@ export default function Map() {
                             onClick={handleCreateTrip}
                             disabled={loading || !origin.pos || !dest.pos}
                         >
-                            {loading ? "Tervezés..." : "Útvonal Létrehozása"}
+                            {loading ? "Mentés..." : "Útvonal Létrehozása"}
                         </button>
 
                         {(origin.pos || dest.pos) && (
@@ -221,25 +263,11 @@ export default function Map() {
                 <div className="map-view-container">
                     <MapContainer center={mapCenter} zoom={zoom} style={{ height: "100%", width: "100%" }}>
                         <ChangeView center={mapCenter} zoom={zoom} />
-
-                        <LocationSelector
-                            setOrigin={setOrigin}
-                            setDest={setDest}
-                            originPos={origin.pos}
-                            destPos={dest.pos}
-                        />
-
-                        <TileLayer
-                            attribution='&copy; OpenStreetMap contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-
+                        <LocationSelector setOrigin={setOrigin} setDest={setDest} originPos={origin.pos} destPos={dest.pos} />
+                        <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         {origin.pos && <Marker position={origin.pos}><Popup>Indulás</Popup></Marker>}
                         {dest.pos && <Marker position={dest.pos}><Popup>Érkezés</Popup></Marker>}
-
-                        {routePath.length > 0 && (
-                            <Polyline positions={routePath} pathOptions={{ color: 'blue', weight: 5 }} />
-                        )}
+                        {routePath.length > 0 && <Polyline positions={routePath} pathOptions={{ color: 'blue', weight: 5 }} />}
                     </MapContainer>
                 </div>
             </div>
