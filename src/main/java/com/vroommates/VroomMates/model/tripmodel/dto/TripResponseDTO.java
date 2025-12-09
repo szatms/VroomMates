@@ -12,19 +12,18 @@ public class TripResponseDTO {
     private String vehiclePlate;
     private boolean isLive;
 
-    private float startLat;
-    private float startLon;
+    private double startLat;
+    private double startLon;
 
     private LocalDateTime departureTime;
 
-    private float endLat;
-    private float endLon;
+    private double endLat;
+    private double endLon;
 
     private int totalSeats;
     private int passengerCount;
     private int remainingSeats;
 
-    // NEW
     private double distance;
     private double co2;
 }

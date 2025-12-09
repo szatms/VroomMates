@@ -23,8 +23,8 @@ public class User {
     private Boolean isDriver;
     private Boolean enabled;
 
-    private Float lat;
-    private Float lon;
+    private Double lat;
+    private Double lon;
 
     @Column(name = "username")
     private String userName;
@@ -48,9 +48,9 @@ public class User {
     private String pfp;
 
     @Column(name = "distance")
-    private Integer distance = 0;
+    private double distance = 0;
     @Column(name = "co2")
-    private Integer co2 = 0;
+    private double co2 = 0;
 
 
 }

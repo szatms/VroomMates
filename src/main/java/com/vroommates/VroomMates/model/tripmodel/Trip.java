@@ -31,10 +31,10 @@ public class Trip {
     private LocalDateTime departureTime;
 
     //start coordinates
-    private float startLat;
-    private float startLon;
+    private double startLat;
+    private double startLon;
 
     //end coordinates
-    private float endLat;
-    private float endLon;
+    private double endLat;
+    private double endLon;
 }

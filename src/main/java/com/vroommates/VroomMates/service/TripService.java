@@ -30,9 +30,9 @@ public class TripService {
 
     private TripResponseDTO toTripDTOWithPassengers(Trip trip) {
 
-        int totalSeats = trip.getVehicle().getSeats();  // összes ülés (pl. 7)
+        int totalSeats = trip.getVehicle().getSeats();
         int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
-        int passengerCount = activePassengers + 1;   // sofőr is számít!
+        int passengerCount = activePassengers + 1; // sofőr is számít
         int remainingSeats = totalSeats - passengerCount;
 
         TripResponseDTO dto = tripMapper.toDTO(trip);
@@ -41,8 +41,6 @@ public class TripService {
         dto.setRemainingSeats(remainingSeats);
         return dto;
     }
-
-
 
     public TripResponseDTO createTrip(TripRequestDTO dto) {
 
@@ -60,13 +58,11 @@ public class TripService {
         return toTripDTOWithPassengers(saved);
     }
 
-
     public TripResponseDTO getTripById(int id) {
         Trip trip = tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
         return toTripDTOWithPassengers(trip);
     }
-
 
     public List<TripResponseDTO> getAllTrips() {
         return tripRepository.findAll()
@@ -74,7 +70,6 @@ public class TripService {
                 .map(this::toTripDTOWithPassengers)
                 .toList();
     }
-
 
     public TripResponseDTO updateTrip(int id, TripRequestDTO dto) {
 
@@ -104,9 +99,9 @@ public class TripService {
         tripRepository.deleteById(id);
     }
 
-// =========================
-// TRIP CLOSING + DISTANCE + CO2
-// =========================
+    // =========================
+    // TRIP CLOSING + DISTANCE + CO2
+    // =========================
 
     public TripResponseDTO endTrip(int tripId) {
 
@@ -134,11 +129,9 @@ public class TripService {
 
         // 4) Driver stat update
         User driver = trip.getDriver();
-        if (driver.getDistance() == null) driver.setDistance(0);
-        if (driver.getCo2() == null) driver.setCo2(0);
 
-        int newDistance = driver.getDistance() + (int) distanceKm;
-        int newCo2 = driver.getCo2() + (int) co2;
+        double newDistance = driver.getDistance() + distanceKm;
+        double newCo2 = driver.getCo2() + co2;
 
         driver.setDistance(newDistance);
         driver.setCo2(newCo2);

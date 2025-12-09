@@ -12,9 +12,9 @@ public class TripRequestDTO {
 
     private LocalDateTime departureTime;
 
-    private float startLat;
-    private float startLon;
+    private double startLat;
+    private double startLon;
 
-    private float endLat;
-    private float endLon;
+    private double endLat;
+    private double endLon;
 }

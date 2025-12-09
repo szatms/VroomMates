@@ -11,15 +11,17 @@ import java.time.LocalDateTime;
 @Component
 public class UserMapper {
 
+    // ============================
     // CREATE DTO -> ENTITY
+    // ============================
     public User fromCreateDTO(UserCreateDTO dto, String passwordHash) {
         return User.builder()
-                .userId(null)                    // JPA generálja
-                .isAdmin(false)                  // új user ne legyen admin
-                .isDriver(dto.isDriver())        // boolean -> Boolean autobox
+                .userId(null)
+                .isAdmin(dto.isAdmin())
+                .isDriver(dto.isDriver())
                 .enabled(true)
-                .lat(0f)
-                .lon(0f)
+                .lat(0.0)
+                .lon(0.0)
                 .userName(dto.getUserName())
                 .passwordHash(passwordHash)
                 .displayName(dto.getDisplayName())
@@ -27,10 +29,14 @@ public class UserMapper {
                 .pfp(null)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .distance(0.0)
+                .co2(0.0)
                 .build();
     }
 
+    // ============================
     // ENTITY -> RESPONSE DTO
+    // ============================
     public UserResponseDTO toResponseDTO(User user) {
         UserResponseDTO dto = new UserResponseDTO();
 
@@ -39,7 +45,7 @@ public class UserMapper {
         dto.setDisplayName(user.getDisplayName());
         dto.setEmail(user.getEmail());
 
-        // egyszerű role-logika
+        // Role meghatározás
         if (Boolean.TRUE.equals(user.getIsAdmin())) {
             dto.setRole("ADMIN");
         } else if (Boolean.TRUE.equals(user.getIsDriver())) {
@@ -50,21 +56,21 @@ public class UserMapper {
 
         dto.setIsDriver(user.getIsDriver());
 
-        // Float -> Double
-        dto.setLat(user.getLat() != null ? user.getLat().doubleValue() : null);
-        dto.setLon(user.getLon() != null ? user.getLon().doubleValue() : null);
+        dto.setLat(user.getLat());
+        dto.setLon(user.getLon());
 
         dto.setPfp(user.getPfp());
         dto.setCreatedAt(user.getCreatedAt());
 
-        dto.setDistance(user.getDistance() != null ? user.getDistance() : 0);
-        dto.setCo2(user.getCo2() != null ? user.getCo2() : 0);
+        dto.setDistance(user.getDistance());
+        dto.setCo2(user.getCo2());
 
         return dto;
     }
 
-
-    // UPDATE DTO -> meglévő ENTITY módosítása
+    // ============================
+    // UPDATE DTO -> EXISTING ENTITY
+    // ============================
     public void updateEntityFromDTO(UserUpdateDTO dto, User user) {
 
         if (dto.getDisplayName() != null) {
@@ -75,11 +81,17 @@ public class UserMapper {
             user.setPfp(dto.getPfp());
         }
 
-        // boolean -> Boolean
-        user.setIsDriver(dto.getDriver());
+        if (dto.getDriver() != null) {
+            user.setIsDriver(dto.getDriver());
+        }
 
-        user.setLat((float) dto.getLat());
-        user.setLon((float) dto.getLon());
+        if (dto.getLat() != null) {
+            user.setLat(dto.getLat());
+        }
+
+        if (dto.getLon() != null) {
+            user.setLon(dto.getLon());
+        }
 
         user.setUpdatedAt(LocalDateTime.now());
     }
