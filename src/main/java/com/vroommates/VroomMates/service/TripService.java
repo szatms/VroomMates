@@ -118,7 +118,7 @@ public class TripService {
         }
 
         // 1) Distance calculation
-        double distanceKm = DistanceCalculator.haversine(
+        double distanceKm = DistanceCalculator.calculateDistance(
                 trip.getStartLat(),
                 trip.getStartLon(),
                 trip.getEndLat(),
