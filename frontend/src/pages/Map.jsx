@@ -110,7 +110,7 @@ export default function Map() {
 
         // 1. Backend mentés
         try {
-            await fetch('http://localhost:5000/api/trip', {
+            await fetch('api/trips', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
