@@ -20,8 +20,6 @@ export default function Login() {
                 email: email,
                 password: password
             });
-
-            // { user: {...}, accessToken: "..." }
             if (data && data.accessToken) {
                 localStorage.setItem("token", data.accessToken);
                 navigate("/user/profil");
