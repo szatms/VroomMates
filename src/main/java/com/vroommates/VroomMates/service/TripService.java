@@ -145,4 +145,42 @@ public class TripService {
 
         return dto;
     }
+
+    // =========================
+    // TRIP SEARCH (10 km radius)
+    // =========================
+
+    public List<TripResponseDTO> searchTrips(double startLat, double startLon,
+                                             double endLat, double endLon) {
+
+        double delta = 0.1; // -+ 11 km bounding box
+
+        // 1) DB pre-search
+        List<Trip> raw = tripRepository.searchByBoundingBox(
+                startLat - delta, startLat + delta,
+                startLon - delta, startLon + delta,
+                endLat - delta, endLat + delta,
+                endLon - delta, endLon + delta
+        );
+
+        // 2) Valós távolságvizsgálat (10 km-en belül)
+        return raw.stream()
+                .filter(t -> {
+
+                    double startDist = DistanceCalculator.haversine(
+                            startLat, startLon,
+                            t.getStartLat(), t.getStartLon()
+                    );
+
+                    double endDist = DistanceCalculator.haversine(
+                            endLat, endLon,
+                            t.getEndLat(), t.getEndLon()
+                    );
+
+                    return startDist <= 10 && endDist <= 10;
+                })
+                .map(this::toTripDTOWithPassengers)
+                .toList();
+    }
+
 }
