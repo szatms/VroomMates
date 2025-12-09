@@ -46,6 +46,9 @@ export default function Map() {
     const [origin, setOrigin] = useState({ text: "", pos: null });
     const [dest, setDest] = useState({ text: "", pos: null });
 
+    // ÚJ STATE A KOMMENTNEK
+    const [comment, setComment] = useState("");
+
     const [routePath, setRoutePath] = useState([]);
     const [loading, setLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]);
@@ -84,6 +87,7 @@ export default function Map() {
     const handleReset = () => {
         setOrigin({ text: "", pos: null });
         setDest({ text: "", pos: null });
+        setComment(""); // Komment törlése resetkor
         setRoutePath([]);
     };
 
@@ -93,6 +97,7 @@ export default function Map() {
             return;
         }
 
+        const userId = localStorage.getItem('userId');
         const userRole = localStorage.getItem('role');
         const token = localStorage.getItem('token');
 
@@ -115,7 +120,9 @@ export default function Map() {
                     startLat: origin.pos[0],
                     startLon: origin.pos[1],
                     destLat: dest.pos[0],
-                    destLon: dest.pos[1]
+                    destLon: dest.pos[1],
+                    userId: userId, // JAVÍTVA: itt 'userid' volt kisbetűvel, ami hibát dobott volna
+                    comment: comment // ÚJ ADAT: a megjegyzés küldése
                 })
             });
         } catch (error) {
@@ -154,7 +161,7 @@ export default function Map() {
                             Írd be a címet és nyomj Entert, VAGY kattints a térképre!
                         </div>
 
-                        {/* ORIGIN INPUT - Most már írható! */}
+                        {/* ORIGIN INPUT */}
                         <div className="input-wrapper">
                             <label className="small fw-bold text-secondary">Indulás:</label>
                             <input
@@ -162,15 +169,13 @@ export default function Map() {
                                 className="form-control map-input"
                                 placeholder="Pl. Debrecen (vagy kattints)"
                                 value={origin.text}
-                                // Itt engedjük az írást:
                                 onChange={(e) => setOrigin({ ...origin, text: e.target.value })}
-                                // Enterre vagy kattintásra máshova keresünk:
                                 onKeyDown={(e) => handleSearch(e, 'origin')}
                                 onBlur={(e) => handleSearch(e, 'origin')}
                             />
                         </div>
 
-                        {/* DEST INPUT - Most már írható! */}
+                        {/* DEST INPUT */}
                         <div className="input-wrapper">
                             <label className="small fw-bold text-secondary">Érkezés:</label>
                             <input
@@ -181,6 +186,19 @@ export default function Map() {
                                 onChange={(e) => setDest({ ...dest, text: e.target.value })}
                                 onKeyDown={(e) => handleSearch(e, 'dest')}
                                 onBlur={(e) => handleSearch(e, 'dest')}
+                            />
+                        </div>
+
+                        {/* ÚJ MEZŐ: KOMMENT */}
+                        <div className="input-wrapper">
+                            <label className="small fw-bold text-secondary">Megjegyzés (opcionális):</label>
+                            <textarea
+                                className="form-control map-input"
+                                placeholder="Pl. Nem dohányzó, indulás pontosan, csomagok..."
+                                rows="3"
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                style={{ resize: 'none' }}
                             />
                         </div>
 
