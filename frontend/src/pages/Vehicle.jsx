@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './Vehicle.css'; // A stílus importálása
+import '../assets/style/vehicle.css'; // A stílus importálása
 
 const Vehicle = () => {
     // State az űrlap adatoknak

@@ -5,10 +5,14 @@ import Registration from './pages/Registration.jsx';
 import Login from './pages/Login.jsx';
 import Map from './pages/Map.jsx';
 import Profile from "./pages/Profil.jsx";
+import Vehicle from "./pages/Vehicle.jsx";
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
+
+                <Route path="/user/vehicle" element={<Vehicle/>} />
+
                 <Route path="/user/profil" element={<Profile/>} />
 
                 <Route path="/map" element={<Map />} />

@@ -24,7 +24,7 @@ public class Vehicle {
     private User owner;
 
     private int seats;
-    private int make;
+    private String make;
     private String model;
     private int year;
     private String colour;
