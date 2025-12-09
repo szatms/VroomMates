@@ -1,0 +1,65 @@
+/* Vehicle.css */
+
+.vehicle-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 90vh; /* Majdnem teljes képernyő magasság */
+    background-color: #f8f9fa; /* Világos háttér */
+    padding: 20px;
+}
+
+.vehicle-card {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px; /* Ne legyen túl széles */
+}
+
+.vehicle-card h2 {
+    color: #333;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.vehicle-card label {
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.vehicle-card .form-control,
+.vehicle-card .form-select {
+    border-radius: 5px;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.2s;
+}
+
+.vehicle-card .form-control:focus,
+.vehicle-card .form-select:focus {
+    border-color: #0d6efd; /* Bootstrap primary color */
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.vehicle-card button[type="submit"] {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background-color 0.3s;
+}
+
+/* Reszponzivitás mobilra */
+@media (max-width: 576px) {
+    .vehicle-card {
+        padding: 20px;
+    }
+
+    .vehicle-card h2 {
+        font-size: 1.5rem;
+    }
+}

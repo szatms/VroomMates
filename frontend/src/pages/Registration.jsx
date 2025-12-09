@@ -8,7 +8,7 @@ export default function Registration() {
     // State kibővítve a username mezővel
     const [formData, setFormData] = useState({
         email: "",
-        username: "",
+        userName: "",
         displayName: "",
         password: "",
         role: "passenger",
@@ -26,7 +26,7 @@ export default function Registration() {
 
         const payload = {
             email: formData.email,
-            username: formData.username, // Hozzáadva a payloadhoz
+            userName: formData.username, // Hozzáadva a payloadhoz
             displayName: formData.displayName,
             password: formData.password,
             driver: formData.role === "driver",
