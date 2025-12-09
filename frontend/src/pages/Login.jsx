@@ -16,7 +16,7 @@ export default function Login() {
 
         try {
             // backend UserLoginDTO email-t és jelszót vár
-            const data = await request("/auth/login", "POST", {
+            const data = await request("/api/auth/login", "POST", {
                 email: email,
                 password: password
             });
