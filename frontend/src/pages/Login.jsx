@@ -22,7 +22,8 @@ export default function Login() {
             });
             if (data && data.accessToken) {
                 localStorage.setItem("token", data.accessToken);
-                localStorage.setItem("userId", data.user.userId)
+                localStorage.setItem("userId", data.user.userId);
+                localStorage.setItem("role", data.user.role)
                 navigate("/user/profil");
             }
         } catch (error) {

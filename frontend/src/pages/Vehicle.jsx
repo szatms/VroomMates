@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './vehicle.css';
+import Navbar from '../components/Navbar.jsx';
+import '../assets/style/vehicle.css';
 
 const Vehicle = () => {
     const [vehicleData, setVehicleData] = useState({
@@ -55,31 +56,26 @@ const Vehicle = () => {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('plate', vehicleData.plate);
-        formData.append('seats', vehicleData.seats);
-        formData.append('make', vehicleData.make);
-        formData.append('model', vehicleData.model);
-        formData.append('year', vehicleData.year);
-        formData.append('colour', vehicleData.colour);
-        formData.append('fuel', vehicleData.fuel);
-
-        // FONTOS: Itt csatoljuk a bejelentkezéskor elmentett userId-t
-        formData.append('ownerID', ownerID);
-
-        if (vehicleData.picture) {
-            formData.append('picture', vehicleData.picture);
-        }
+        const jsonData = {
+            plate: vehicleData.plate,
+            seats: Number(vehicleData.seats),
+            make: vehicleData.make,
+            model: vehicleData.model,
+            year: Number(vehicleData.year),
+            colour: vehicleData.colour,
+            fuel: vehicleData.fuel,
+            ownerID: Number(ownerID),
+            picture: null // jelenleg nem kezeljük a backendben
+        };
 
         try {
-            // Cseréld le a URL-t a sajátodra
-            const response = await fetch('http://localhost:5000/api/vehicles', {
+            const response = await fetch('/api/vehicles', {
                 method: 'POST',
                 headers: {
-                    // A token itt kerül beillesztésre
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: formData
+                body: JSON.stringify(jsonData)
             });
 
             if (response.ok) {
@@ -99,7 +95,10 @@ const Vehicle = () => {
         }
     };
 
+
     return (
+        <>
+        <Navbar />
         <div className="vehicle-container">
             <div className="vehicle-card">
                 <h2 className="text-center mb-4">Jármű Regisztráció</h2>
@@ -166,6 +165,7 @@ const Vehicle = () => {
                 </form>
             </div>
         </div>
+        </>
     );
 };
 

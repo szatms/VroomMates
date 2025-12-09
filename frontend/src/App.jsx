@@ -13,7 +13,7 @@ export default function App() {
 
                 <Route path="/user/vehicle" element={<Vehicle/>} />
 
-                <Route path="/user/profil" element={<Profile/>} />
+                <Route path="/user/profile" element={<Profile/>} />
 
                 <Route path="/map" element={<Map />} />
 
