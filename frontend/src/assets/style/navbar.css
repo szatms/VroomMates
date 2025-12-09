@@ -16,6 +16,7 @@
 /* A logó kép magassága */
 .navbar-brand img {
     height: 100px;
+    clip-path: circle();
 }
 
 /* A navbar-brand horgonyt (a) célozza meg, a logón belül */

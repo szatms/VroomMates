@@ -33,7 +33,7 @@ const Navbar = () => {
         <nav className="navbar navbar-expand-lg sticky-top">
             <div className="container-fluid">
                 <a className="navbar-brand" href="/">
-                    <img src="/images/Logo.png" alt="Logo"/>
+                    <img src="../public/images/logo.jpeg" alt="Logo"/>
                 </a>
 
                 <button

@@ -1,15 +1,11 @@
-// frontend/src/pages/Map.jsx
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar.jsx';
 import '../assets/style/map.css';
-
-// Leaflet importok
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Ikon hiba javítása
+// Ikon javítás
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -21,90 +17,101 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Segédkomponens: Térkép mozgatása
 function ChangeView({ center, zoom }) {
     const map = useMap();
     map.setView(center, zoom);
     return null;
 }
 
-export default function Map() {
-    // Input mezők szövege
-    const [originText, setOriginText] = useState("");
-    const [destText, setDestText] = useState("");
+function LocationSelector({ setOriginPos, setDestPos, originPos, destPos }) {
+    useMapEvents({
+        click(e) {
+            // Itt is szűrhetnénk, de a fő logikában tisztább
+            if (!originPos) {
+                setOriginPos([e.latlng.lat, e.latlng.lng]);
+            } else if (!destPos) {
+                setDestPos([e.latlng.lat, e.latlng.lng]);
+            }
+        },
+    });
+    return null;
+}
 
-    // Koordináták
+export default function Map() {
     const [originPos, setOriginPos] = useState(null);
     const [destPos, setDestPos] = useState(null);
-
-    // Útvonal pontok
     const [routePath, setRoutePath] = useState([]);
-
-    // Térkép nézet
+    const [loading, setLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]);
     const [zoom, setZoom] = useState(13);
 
-    // 1. Koordináta keresés (Nominatim API)
-    const getCoordinates = async (query) => {
-        if (!query) return null;
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
-            const data = await response.json();
-            if (data && data.length > 0) {
-                return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-            }
-            return null;
-        } catch (error) {
-            console.error("Geocoding hiba:", error);
-            return null;
-        }
+    // Reset gomb
+    const handleReset = () => {
+        setOriginPos(null);
+        setDestPos(null);
+        setRoutePath([]);
     };
 
-    // Keresés gomb logika
-    const handlePlanRoute = async () => {
-        if (!originText || !destText) {
-            alert("Kérlek add meg az indulási és érkezési helyet!");
-            return;
-        }
-
-        const startCoords = await getCoordinates(originText);
-        const endCoords = await getCoordinates(destText);
-
-        if (startCoords && endCoords) {
-            setOriginPos(startCoords);
-            setDestPos(endCoords);
-            setMapCenter(startCoords);
-            setZoom(13);
-        } else {
-            alert("Nem sikerült megtalálni az egyik címet.");
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') handlePlanRoute();
-    };
-
-    // 2. Útvonal lekérése a Backendről
+    // --- AZ ÚTVONAL LEKÉRÉSE ÉS KIRAJZOLÁSA ---
     useEffect(() => {
         const fetchRoute = async () => {
+            // 1. Csak akkor futunk, ha mindkét pont megvan
             if (originPos && destPos) {
+
+                // 2. SZEREPKÖR ELLENŐRZÉSE
+                const userRole = localStorage.getItem('role'); // Loginból elmentett role
+
+                if (userRole !== 'DRIVER') {
+                    alert("Csak regisztrált sofőrök generálhatnak útvonalat!");
+                    // Töröljük a pontokat, hogy ne maradjanak ott
+                    handleReset();
+                    return;
+                }
+
+                setLoading(true);
+                const token = localStorage.getItem('token');
+
                 try {
-                    const response = await fetch(
-                        `http://localhost:8080/api/route?startLat=${originPos[0]}&startLon=${originPos[1]}&endLat=${destPos[0]}&endLon=${destPos[1]}`
-                    );
+                    const response = await fetch('http://localhost:5000/api/route', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            startLat: originPos[0],
+                            startLon: originPos[1],
+                            destLat: destPos[0],
+                            destLon: destPos[1]
+                        })
+                    });
 
                     if (response.ok) {
-                        const coordinates = await response.json();
-                        setRoutePath(coordinates);
+                        const data = await response.json();
 
-                        // Opcionális: középre igazítás
-                        const midLat = (originPos[0] + destPos[0]) / 2;
-                        const midLon = (originPos[1] + destPos[1]) / 2;
-                        setMapCenter([midLat, midLon]);
-                        setZoom(12);
+                        // Backend válasz feldolgozása
+                        // Figyelem: A backendtől függ, hol van a koordináta tömb!
+                        // Ha OpenRouteService raw data: data.features[0].geometry.coordinates
+                        // Ha saját backend tisztított adat: data (tömb) vagy data.coordinates
+
+                        let rawCoordinates = [];
+                        if (Array.isArray(data)) rawCoordinates = data;
+                        else if (data.coordinates) rawCoordinates = data.coordinates;
+                        else if (data.features) rawCoordinates = data.features[0].geometry.coordinates;
+
+                        // 3. KOORDINÁTA FORDÍTÁS ÉS RAJZOLÁS ELŐKÉSZÍTÉSE
+                        // [Lon, Lat] -> [Lat, Lon] konverzió a Leafletnek
+                        const leafletPath = rawCoordinates.map(coord => [coord[1], coord[0]]);
+
+                        setRoutePath(leafletPath); // Ez indítja a kirajzolást a return-ben
+
+                    } else {
+                        console.error("Hiba a backend válaszban");
                     }
                 } catch (error) {
                     console.error("Backend hiba:", error);
+                } finally {
+                    setLoading(false);
                 }
             }
         };
@@ -115,110 +122,49 @@ export default function Map() {
     return (
         <>
             <Navbar />
-
             <div className="map-page-container">
-
-                {/* --- BAL OLDALI SÁV --- */}
+                {/* Bal sáv (rövidítve a példában) */}
                 <div className="travel-sidebar">
-                    <h2 className="travel-title text-center mb-4">Travel!</h2>
-                    <hr className="sidebar-divider" />
-
-                    <div className="travel-form d-flex flex-column gap-3">
-
-                        {/* Origin */}
-                        <div className="input-wrapper">
-                            <input
-                                type="text"
-                                className="form-control map-input"
-                                placeholder="Origin... (pl. Debrecen)"
-                                value={originText}
-                                onChange={(e) => setOriginText(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                            />
-                        </div>
-
-                        {/* Destination */}
-                        <div className="input-wrapper">
-                            <input
-                                type="text"
-                                className="form-control map-input"
-                                placeholder="Destination... (pl. Budapest)"
-                                value={destText}
-                                onChange={(e) => setDestText(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                            />
-                        </div>
-
-                        <div className="input-wrapper">
-                            <input type="text" className="form-control map-input" placeholder="When..." />
-                        </div>
-
-                        <div className="input-wrapper">
-                            <input type="number" className="form-control map-input" placeholder="Group size" />
-                        </div>
-
-                        {/* Útvonaltervezés Gomb */}
-                        <button
-                            className="btn btn-search w-100 mt-2"
-                            onClick={handlePlanRoute}
-                        >
-                            Útvonaltervezés
+                    <h2 className="travel-title text-center mb-4">Útvonaltervezés</h2>
+                    <div className="text-center mb-3">
+                        {loading ? "Számítás folyamatban..." : "Kattints a térképre!"}
+                    </div>
+                    {(originPos || destPos) && (
+                        <button className="btn btn-danger w-100" onClick={handleReset}>
+                            Törlés / Újra
                         </button>
-
-                        <div className="text-end">
-                            <a href="#" className="usual-route-link">Usual route</a>
-                        </div>
-                    </div>
-
-                    <hr className="sidebar-divider my-4" />
-
-                    <h5 className="mb-3">Available drivers:</h5>
-
-                    {/* Sofőr kártya (teljes tartalommal) */}
-                    <div className="driver-offer-card d-flex align-items-center p-2 rounded">
-                        <div className="driver-img-container me-3">
-                            <img src="/images/driver-placeholder-1.jpg" alt="Bing" className="rounded-circle map-driver-avatar" />
-                        </div>
-                        <div className="driver-details">
-                            <div className="d-flex align-items-center">
-                                <span className="driver-name fw-bold me-2">Bing</span>
-                                <span className="driver-stars text-warning">★★★★</span>
-                            </div>
-                            <p className="driver-eta mb-0">
-                                {routePath.length > 0 ? "Útvonal megtervezve!" : "At your origin in 52 minutes."}
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
-                {/* --- JOBB OLDALI TÉRKÉP (A HIÁNYZÓ RÉSZ!) --- */}
+                {/* Jobb oldal - TÉRKÉP */}
                 <div className="map-view-container">
-                    <MapContainer
-                        center={mapCenter}
-                        zoom={zoom}
-                        style={{ height: "100%", width: "100%" }} // Fontos a magasság!
-                        scrollWheelZoom={true}
-                    >
+                    <MapContainer center={mapCenter} zoom={zoom} style={{ height: "100%", width: "100%" }}>
                         <ChangeView center={mapCenter} zoom={zoom} />
 
+                        <LocationSelector
+                            setOriginPos={setOriginPos}
+                            setDestPos={setDestPos}
+                            originPos={originPos}
+                            destPos={destPos}
+                        />
+
                         <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution='&copy; OpenStreetMap contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
 
                         {originPos && <Marker position={originPos}><Popup>Indulás</Popup></Marker>}
                         {destPos && <Marker position={destPos}><Popup>Érkezés</Popup></Marker>}
 
-                        {/* Zöld vonal */}
+                        {/* 4. ITT TÖRTÉNIK A KIRAJZOLÁS */}
                         {routePath.length > 0 && (
                             <Polyline
                                 positions={routePath}
-                                pathOptions={{ color: '#6fb055', weight: 6, opacity: 0.8 }}
+                                pathOptions={{ color: 'blue', weight: 5, opacity: 0.7 }}
                             />
                         )}
                     </MapContainer>
                 </div>
-
             </div>
         </>
     );
