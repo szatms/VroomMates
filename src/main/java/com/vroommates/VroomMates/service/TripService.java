@@ -1,5 +1,6 @@
 package com.vroommates.VroomMates.service;
 
+import com.vroommates.VroomMates.model.bookingmodel.Booking;
 import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
@@ -15,7 +16,9 @@ import com.vroommates.VroomMates.util.DistanceCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -209,13 +212,39 @@ public class TripService {
         return dto;
     }
 
-
     public List<TripResponseDTO> getActiveTripsForDriver(int driverId) {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
         return tripRepository.findAllByDriverAndIsLiveTrueOrderByDepartureTimeAsc(driver)
                 .stream()
+                .map(this::toTripDTOWithPassengers)
+                .toList();
+    }
+
+    public List<TripResponseDTO> getTripsForUser(int userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 1) Trip-ek, ahol ő a sofőr
+        List<Trip> driverTrips = tripRepository.findAll()
+                .stream()
+                .filter(t -> t.getDriver().equals(user))
+                .toList();
+
+        // 2) Trip-ek, ahol utasként vett részt (JOINED státusz)
+        List<Booking> passengerBookings =
+                bookingRepository.findByUserAndStatus(user, BookingStatus.JOINED);
+
+        List<Trip> passengerTrips = passengerBookings.stream()
+                .map(Booking::getTrip)
+                .toList();
+
+        // 3) ÖSSZEFŰZÉS + duplikációszűrés + rendezés, MÉG Trip szinten
+        return Stream.concat(driverTrips.stream(), passengerTrips.stream())
+                .distinct()
+                .sorted(Comparator.comparing(Trip::getDepartureTime).reversed())
                 .map(this::toTripDTOWithPassengers)
                 .toList();
     }
