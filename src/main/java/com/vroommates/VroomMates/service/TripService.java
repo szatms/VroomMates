@@ -184,4 +184,14 @@ public class TripService {
 
         return dto;
     }
+
+    public List<TripResponseDTO> getActiveTripsForDriver(int driverId) {
+        User driver = userRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found"));
+
+        return tripRepository.findAllByDriverAndIsLiveTrueOrderByDepartureTimeAsc(driver)
+                .stream()
+                .map(this::toTripDTOWithPassengers)
+                .toList();
+    }
 }
