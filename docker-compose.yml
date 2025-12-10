@@ -16,7 +16,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./vroomatesDB.sql:/docker-entrypoint-initdb.d/init.sql
+      #- ./vroomatesDB.sql:/docker-entrypoint-initdb.d/init.sql
 
   # 2. BACKEND
   backend:
