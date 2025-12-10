@@ -125,11 +125,9 @@ export default function Map() {
 
     // --- 2. ÚJ FUNKCIÓ: AJÁNLOTT UTAK BETÖLTÉSE (TOP 5) ---
     useEffect(() => {
-        // Csak akkor töltünk, ha Utas módban vagyunk, nincs aktív út, és még nem kerestünk (vagy üres a lista)
         if (mode === 'passenger' && !activeTripData) {
             const fetchRecommendedTrips = async () => {
                 try {
-                    // Mivel nincs dedikált "recommended" végpont, lekérjük az összeset és szűrjük
                     const trips = await request('/trips');
                     if (!trips) return;
 
@@ -141,18 +139,13 @@ export default function Map() {
                         if (!isLive) return false;
 
                         const dep = new Date(t.departureTime);
-                        // Megjelenítjük a jövőbelieket és az elmúlt 24 órában indultakat (ha még aktívak)
                         const isRecent = dep > new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
                         return isRecent;
                     });
 
-                    // Rendezés: Időrendben (legkorábbi elől)
                     activeOrUpcoming.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
 
-                    // Top 5 megjelenítése
-                    // Csak akkor írjuk felül, ha a user még nem írt be keresést (origin.text üres)
-                    // Vagy ha még üres a lista. Így nem töröljük ki a user keresését véletlenül.
                     if (!origin.text && !dest.text) {
                         setSearchResults(activeOrUpcoming.slice(0, 5));
                     }
@@ -162,7 +155,7 @@ export default function Map() {
             };
             fetchRecommendedTrips();
         }
-    }, [mode, activeTripData]); // Ha a mód változik, újratöltjük
+    }, [mode, activeTripData]);
 
 
     // --- 3. AUTOMATIKUS KITÖLTÉS (HomePage navigáció után) ---
@@ -234,8 +227,6 @@ export default function Map() {
         setDest({ text: "", pos: null });
         setSearchResults([]); // Ez törli a listát
         setActiveTripData(null);
-        // Tipp: Ha reseteljük, a useEffect újra lefuthatna, hogy visszahozza az ajánlottakat,
-        // de mivel a dependency array-ben a 'mode' van, lehet hogy váltani kell hozzá.
     };
 
     const handleCreateTrip = async () => {

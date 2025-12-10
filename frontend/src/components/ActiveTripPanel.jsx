@@ -164,7 +164,7 @@ export default function ActiveTripPanel({ mode, tripData, onEndTrip, currentUser
             <div className="travel-sidebar text-white bg-dark d-flex flex-column h-100">
                 <div className="d-flex align-items-center mb-3 border-bottom border-secondary pb-3 flex-shrink-0">
                     <div className="badge bg-warning text-dark me-2">DRIVER</div>
-                    <h4 className="m-0">Úton vagy! 🚗</h4>
+                    <h4 className="m-0">Úton vagy!</h4>
                 </div>
 
                 <div className="mb-3 flex-shrink-0">
@@ -220,7 +220,7 @@ export default function ActiveTripPanel({ mode, tripData, onEndTrip, currentUser
         return (
             <div className="travel-sidebar text-white d-flex flex-column h-100" style={{backgroundColor: '#65B645'}}>
                 <div className="text-center mb-4 flex-shrink-0">
-                    <h4 className="fw-bold">Jó utat! 👋</h4>
+                    <h4 className="fw-bold">Jó utat!</h4>
                     <p className="small text-white-50">Érkezés kb. 37 perc múlva</p>
                 </div>
 
