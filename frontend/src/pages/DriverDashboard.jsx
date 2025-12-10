@@ -21,6 +21,7 @@ export default function DriverDashboard() {
                 const vehicleData = await request(`/vehicles/owner/${userId}`);
                 setVehicle(vehicleData);
 
+                // Csak az aktív utakat kérjük le a sofőrhöz
                 const tripsData = await request(`/trips/driver/${userId}`);
                 setTrips(tripsData || []);
 
@@ -33,6 +34,22 @@ export default function DriverDashboard() {
 
         fetchData();
     }, [navigate]);
+
+    // --- ÚT LEZÁRÁSA FUNKCIÓ ---
+    const handleEndTrip = async (tripId) => {
+        if (!window.confirm("Biztosan lezárod ezt az utat?")) return;
+
+        try {
+            await request(`/trips/${tripId}/end`, 'POST');
+            alert("Út sikeresen lezárva! A statisztikák frissültek.");
+
+            // Frissítjük a listát (kivesszük a lezárt utat)
+            setTrips(prev => prev.filter(t => t.tripID !== tripId));
+        } catch (error) {
+            console.error(error);
+            alert("Hiba történt az út lezárásakor: " + error.message);
+        }
+    };
 
     if (loading) return <div className="text-white text-center mt-5">Betöltés...</div>;
 
@@ -124,8 +141,17 @@ export default function DriverDashboard() {
                                         )}
                                     </div>
                                     <div className="card-footer bg-dark border-0">
-                                        <button className="btn btn-danger w-100 btn-sm">
-                                            Út Lezárása (Később)
+                                        <button
+                                            className="btn btn-danger w-100 btn-sm fw-bold"
+                                            onClick={() => handleEndTrip(trip.tripID)}
+                                        >
+                                            ÚT LEZÁRÁSA
+                                        </button>
+                                        <button
+                                            className="btn btn-primary w-100 btn-sm fw-bold mt-2"
+                                            onClick={() => navigate('/map')}
+                                        >
+                                            UGRÁS A TÉRKÉPRE
                                         </button>
                                     </div>
                                 </div>
