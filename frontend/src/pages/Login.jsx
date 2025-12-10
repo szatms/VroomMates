@@ -23,6 +23,7 @@ export default function Login() {
             if (data && data.accessToken) {
                 localStorage.setItem("token", data.accessToken);
                 localStorage.setItem("userId", data.user.userId);
+                localStorage.setItem("userName", data.user.userName);
                 localStorage.setItem("role", data.user.role)
                 navigate("/user/profile");
             }
