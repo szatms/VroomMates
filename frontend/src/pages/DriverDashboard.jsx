@@ -21,7 +21,6 @@ export default function DriverDashboard() {
                 const vehicleData = await request(`/vehicles/owner/${userId}`);
                 setVehicle(vehicleData);
 
-                // Csak az aktív utakat kérjük le a sofőrhöz
                 const tripsData = await request(`/trips/driver/${userId}`);
                 setTrips(tripsData || []);
 
@@ -35,15 +34,12 @@ export default function DriverDashboard() {
         fetchData();
     }, [navigate]);
 
-    // --- ÚT LEZÁRÁSA FUNKCIÓ ---
     const handleEndTrip = async (tripId) => {
         if (!window.confirm("Biztosan lezárod ezt az utat?")) return;
 
         try {
             await request(`/trips/${tripId}/end`, 'POST');
             alert("Út sikeresen lezárva! A statisztikák frissültek.");
-
-            // Frissítjük a listát (kivesszük a lezárt utat)
             setTrips(prev => prev.filter(t => t.tripID !== tripId));
         } catch (error) {
             console.error(error);
@@ -59,7 +55,6 @@ export default function DriverDashboard() {
             <div className="container mt-5 text-white">
                 <h1 className="mb-4 fw-bold">Sofőr Pult</h1>
 
-                {/* --- 1. JÁRMŰ SZEKCIÓ --- */}
                 <div className="card bg-dark text-white border-secondary mb-5 shadow">
                     <div className="card-header bg-success fw-bold text-uppercase">
                         Aktuális Járműved
@@ -96,7 +91,6 @@ export default function DriverDashboard() {
                     </div>
                 </div>
 
-                {/* --- 2. UTAK SZEKCIÓ --- */}
                 <h3 className="mb-3 border-bottom pb-2">Tervezett / Aktív Útjaid</h3>
 
                 {trips.length === 0 ? (
@@ -147,9 +141,10 @@ export default function DriverDashboard() {
                                         >
                                             ÚT LEZÁRÁSA
                                         </button>
+
                                         <button
                                             className="btn btn-primary w-100 btn-sm fw-bold mt-2"
-                                            onClick={() => navigate('/map')}
+                                            onClick={() => navigate('/map', { state: { activeTrip: trip } })}
                                         >
                                             UGRÁS A TÉRKÉPRE
                                         </button>
