@@ -62,4 +62,9 @@ public class TripController {
     public List<TripResponseDTO> getDriverTrips(@PathVariable int driverId) {
         return tripService.getActiveTripsForDriver(driverId);
     }
+
+    @GetMapping("/user/{userId}")
+    public List<TripResponseDTO> getTripsForUser(@PathVariable int userId) {
+        return tripService.getTripsForUser(userId);
+    }
 }
