@@ -55,6 +55,7 @@ export default function Map() {
     const [tripDate, setTripDate] = useState("");
     const [tripTime, setTripTime] = useState("");
 
+    // Új state-ek az időszűréshez
     const [searchTimeStart, setSearchTimeStart] = useState("00:00");
     const [searchTimeEnd, setSearchTimeEnd] = useState("23:59");
 
@@ -204,16 +205,18 @@ export default function Map() {
 
             const results = await request(`/trips/search?${queryParams.toString()}`, 'GET');
 
-            // --- iDŐSZŰRÉS LOGIKA ---
+            // --- JAVÍTOTT IDŐSZŰRÉS LOGIKA ---
             const filteredResults = results.filter(trip => {
                 const tripDateObj = new Date(trip.departureTime);
 
+                // 1. Dátum egyezés (Helyi formátumra alakítva: 'YYYY-MM-DD')
                 if (tripDate) {
                     // sv-SE formátum ISO-szerű (YYYY-MM-DD), de figyelembe veszi a helyi zónát
                     const tDate = tripDateObj.toLocaleDateString('sv-SE');
                     if (tDate !== tripDate) return false;
                 }
 
+                // 2. Időintervallum szűrés
                 const tTime = tripDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
                 return tTime >= searchTimeStart && tTime <= searchTimeEnd;

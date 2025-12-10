@@ -24,17 +24,17 @@ public class StatsService {
     private final TripMapper tripMapper;
 
     public HomeStatsDTO getHomePageStats() {
-            LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
 
-            // Legközelebbi út lekérése
-            Trip nextTripEntity = tripRepository.findFirstByIsLiveTrueAndDepartureTimeAfterOrderByDepartureTimeAsc(now);
-            TripResponseDTO nextTripDTO = (nextTripEntity != null) ? tripMapper.toDTO(nextTripEntity) : null;
+        // Legközelebbi út lekérése
+        Trip nextTripEntity = tripRepository.findFirstByIsLiveTrueAndDepartureTimeAfterOrderByDepartureTimeAsc(now);
+        TripResponseDTO nextTripDTO = (nextTripEntity != null) ? tripMapper.toDTO(nextTripEntity) : null;
 
-            // Ha van nextTrip, tegyük bele a location neveket is (ha a mapper alapból nem tenné)
-            if (nextTripEntity != null && nextTripDTO != null) {
-                nextTripDTO.setStartLocation(nextTripEntity.getStartLocation());
-                nextTripDTO.setEndLocation(nextTripEntity.getEndLocation());
-            }
+        // Ha van nextTrip, tegyük bele a location neveket is (ha a mapper alapból nem tenné)
+        if (nextTripEntity != null && nextTripDTO != null) {
+            nextTripDTO.setStartLocation(nextTripEntity.getStartLocation());
+            nextTripDTO.setEndLocation(nextTripEntity.getEndLocation());
+        }
 
         List<RatingResponseDTO> ratings = ratingRepository.findTop3ByCommentIsNotNullOrderByCreatedAtDesc()
                 .stream()
