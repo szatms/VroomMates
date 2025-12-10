@@ -12,7 +12,7 @@ const Navbar = () => {
             setIsLoggedIn(true);
 
             const savedName = localStorage.getItem('userName');
-            const savedRole = localStorage.getItem('role'); //
+            const savedRole = localStorage.getItem('role');
 
             setUserData({ name: savedName || "Felhasználó" });
             if (savedRole) setUserRole(savedRole);
@@ -22,7 +22,7 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('userName');
-        localStorage.removeItem('role'); //
+        localStorage.removeItem('role');
         setIsLoggedIn(false);
         setUserData(null);
         setUserRole(null);
@@ -33,7 +33,7 @@ const Navbar = () => {
         <nav className="navbar navbar-expand-lg sticky-top">
             <div className="container-fluid">
                 <a className="navbar-brand" href="/">
-                    <img src="/images/logo.jpeg" alt="Logo"/>
+                    <img src="/images/logo.jpeg" alt="Logo" style={{maxHeight: '40px'}}/>
                 </a>
 
                 <button
@@ -54,11 +54,23 @@ const Navbar = () => {
                             <a className="nav-link" href="/szures">Sofőrök</a>
                         </li>
 
-                        {/* 🔥 DRIVER SPECIFIKUS GOMB */}
-                        {userRole === "DRIVER" && (
+                        {/* 🔥 DINAMIKUS GOMB (Mindkettőnek megjelenik, de máshova visz) */}
+                        {isLoggedIn && (
                             <li className="nav-item">
-                                <a className="nav-link text-dark fw-bold" href="/driver/dashboard">
-                                    Sofőr Panel
+                                <a
+                                    className={`nav-link fw-bold ${userRole === 'DRIVER' ? 'text-success' : 'text-primary'}`}
+                                    href={userRole === 'DRIVER' ? '/user/vehicle' : '/user/history'}
+                                >
+                                    {/* Ikon és szöveg cseréje szerepkör alapján */}
+                                    {userRole === 'DRIVER' ? (
+                                        <>
+                                            <i className="bi bi-car-front-fill me-1"></i> Járművem
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-backpack-fill me-1"></i> Utazásaim
+                                        </>
+                                    )}
                                 </a>
                             </li>
                         )}
@@ -81,7 +93,8 @@ const Navbar = () => {
                          right: 0,
                          backgroundColor: 'white',
                          border: '1px solid #ddd',
-                         borderRadius: '0 0 5px 5px'
+                         borderRadius: '0 0 5px 5px',
+                         zIndex: 1000
                      }}
                 >
                     <ul className="navbar-nav p-2">
@@ -89,19 +102,13 @@ const Navbar = () => {
                             <>
                                 <li className="nav-item border-bottom mb-1">
                                     <span className="nav-link text-dark fw-bold">
-                                        Szia, {localStorage.getItem('userName')}!
+                                        Szia, {userData ? userData.name : 'Vendég'}!
                                     </span>
                                 </li>
 
                                 <li className="nav-item">
                                     <a className="nav-link text-dark" href="/user/profile">
                                         Profilom
-                                    </a>
-                                </li>
-
-                                <li className="nav-item">
-                                    <a className="nav-link text-dark" href="/user/vehicle">
-                                        Járművem
                                     </a>
                                 </li>
 
