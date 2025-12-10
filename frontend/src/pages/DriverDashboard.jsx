@@ -18,11 +18,9 @@ export default function DriverDashboard() {
             }
 
             try {
-                // 1. Autó lekérése
                 const vehicleData = await request(`/vehicles/owner/${userId}`);
                 setVehicle(vehicleData);
 
-                // 2. Utak lekérése
                 const tripsData = await request(`/trips/driver/${userId}`);
                 setTrips(tripsData || []);
 
@@ -53,7 +51,6 @@ export default function DriverDashboard() {
                         {vehicle ? (
                             <div className="row align-items-center">
                                 <div className="col-md-4 text-center">
-                                    {/* --- ITT VOLT A HIBA: MOST MÁR HASZNÁLJA A KÉPET --- */}
                                     <img
                                         src={vehicle.picture ? vehicle.picture : "/images/car-placeholder.jpg"}
                                         alt="Car"
@@ -103,19 +100,21 @@ export default function DriverDashboard() {
                                         </div>
 
                                         <h5 className="card-title mb-3">
-                                            <i className="fas fa-map-marker-alt text-danger me-2"></i>
                                             Indulás: <br/>
-                                            <small className="text-light ms-4">({trip.startLat.toFixed(3)}, {trip.startLon.toFixed(3)})</small>
+                                            <span className="text-warning fs-6">
+                                                {trip.startLocation || `(${trip.startLat.toFixed(3)}, ${trip.startLon.toFixed(3)})`}
+                                            </span>
                                         </h5>
                                         <h5 className="card-title mb-4">
-                                            <i className="fas fa-flag-checkered text-success me-2"></i>
                                             Érkezés: <br/>
-                                            <small className="text-light ms-4">({trip.endLat.toFixed(3)}, {trip.endLon.toFixed(3)})</small>
+                                            <span className="text-warning fs-6">
+                                                {trip.endLocation || `(${trip.endLat.toFixed(3)}, ${trip.endLon.toFixed(3)})`}
+                                            </span>
                                         </h5>
 
                                         <div className="d-flex justify-content-between border-top pt-3 border-dark">
-                                            <span><i className="fas fa-users"></i> Utasok: {trip.passengerCount - 1}</span>
-                                            <span><i className="fas fa-chair"></i> Szabad: {trip.remainingSeats}</span>
+                                            <span>Utasok: {trip.passengerCount - 1}</span>
+                                            <span>Szabad: {trip.remainingSeats}</span>
                                         </div>
 
                                         {trip.tripMessage && (
