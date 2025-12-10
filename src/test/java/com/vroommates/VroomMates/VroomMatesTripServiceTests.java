@@ -18,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,14 +47,15 @@ public class VroomMatesTripServiceTests {
     private Vehicle vehicle;
     private Trip trip;
     private TripRequestDTO tripRequestDTO;
+    private TripResponseDTO tripResponseDTO;
 
     @BeforeEach
     void setUp() {
         driver = User.builder()
                 .userId(1)
                 .userName("Driver")
-                .distance(0)
-                .co2(0)
+                .distance(100)
+                .co2(50.0)
                 .build();
 
         vehicle = new Vehicle();
@@ -61,38 +64,44 @@ public class VroomMatesTripServiceTests {
 
         tripRequestDTO = new TripRequestDTO();
         tripRequestDTO.setDriverID(1);
-        tripRequestDTO.setVehiclePlate("ABC-123");
-        tripRequestDTO.setStartLat(47.5f);
-        tripRequestDTO.setStartLon(19.0f);
-        tripRequestDTO.setEndLat(48.0f);
-        tripRequestDTO.setEndLon(20.0f);
-        tripRequestDTO.setLive(true);
+        tripRequestDTO.setDepartureTime(LocalDateTime.now().plusHours(1));
+        tripRequestDTO.setStartLat(47.4947);
+        tripRequestDTO.setStartLon(19.0402);
+        tripRequestDTO.setEndLat(48.5300);
+        tripRequestDTO.setEndLon(20.0800);
+
 
         trip = Trip.builder()
                 .tripID(100)
                 .driver(driver)
                 .vehicle(vehicle)
                 .isLive(true)
-                .startLat(47.5f)
-                .startLon(19.0f)
-                .endLat(48.0f)
-                .endLon(20.0f)
+                .startLat(47.4947)
+                .startLon(19.0402)
+                .endLat(47.5300)
+                .endLon(19.0800)
                 .build();
+
+        tripResponseDTO = TripResponseDTO.builder()
+                .tripID(100)
+                .driverID(1)
+                .isLive(true)
+                .build();
+
     }
 
 
     // CREATE TRIP & SEAT CALCULATION
 
     @Test
-    void createTrip_ShouldCalculateRemainingSeatsCorrectly() {
+    void createTrip_ShouldAssignVehicleAndCalculateSeats() {
         // ARRANGE
         when(userRepository.findById(1)).thenReturn(Optional.of(driver));
-        when(vehicleRepository.findById("ABC-123")).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findFirstByOwner(driver)).thenReturn(Optional.of(vehicle));
+
         when(tripMapper.toEntity(tripRequestDTO)).thenReturn(trip);
         when(tripRepository.save(trip)).thenReturn(trip);
-
-        TripResponseDTO emptyDTO = TripResponseDTO.builder().build();
-        when(tripMapper.toDTO(trip)).thenReturn(emptyDTO);
+        when(tripMapper.toDTO(trip)).thenReturn(tripResponseDTO);
 
         when(bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED)).thenReturn(1);
 
@@ -100,6 +109,7 @@ public class VroomMatesTripServiceTests {
         TripResponseDTO result = tripService.createTrip(tripRequestDTO);
 
         // ASSERT
+        assertThat(trip.getVehicle()).isEqualTo(vehicle);
         assertThat(result.getTotalSeats()).isEqualTo(5);
         assertThat(result.getPassengerCount()).isEqualTo(2);
         assertThat(result.getRemainingSeats()).isEqualTo(3);
@@ -108,75 +118,115 @@ public class VroomMatesTripServiceTests {
     }
 
     @Test
-    void createTrip_ShouldThrowException_WhenDriverNotFound() {
+    void createTrip_ShouldThrowException_WhenDriverHasNoVehicle() {
         // ARRANGE
-        when(userRepository.findById(1)).thenReturn(Optional.empty());
+        when(userRepository.findById(1)).thenReturn(Optional.of(driver));
+        when(vehicleRepository.findFirstByOwner(driver)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
         RuntimeException ex = assertThrows(RuntimeException.class, () -> tripService.createTrip(tripRequestDTO));
-        assertThat(ex.getMessage()).isEqualTo("Driver not found");
+        assertThat(ex.getMessage()).isEqualTo("Driver has no registered vehicle");
     }
 
-    // GET TRIP
+    // SEARCH TRIP
 
     @Test
-    void getTripById_ShouldReturnTrip_WhenExists() {
+    void searchTrips_ShouldFilterByExactDistance() {
         // ARRANGE
-        when(tripRepository.findById(100)).thenReturn(Optional.of(trip));
-        when(tripMapper.toDTO(trip)).thenReturn(TripResponseDTO.builder().tripID(100).build());
-        when(bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED)).thenReturn(0);
+        double searchLat = 47.4979;
+        double searchLon = 19.0402;
+
+        Trip tripClose = Trip.builder()
+                .tripID(1)
+                .driver(driver).vehicle(vehicle)
+                .startLat(47.4979).startLon(19.0402)
+                .endLat(47.4979).endLon(19.0402)
+                .build();
+
+        Trip tripFar = Trip.builder()
+                .tripID(2)
+                .driver(driver).vehicle(vehicle)
+                .startLat(47.5).startLon(21.6)
+                .endLat(47.5).endLon(21.6)
+                .build();
+
+        when(tripRepository.searchByBoundingBox(anyDouble(), anyDouble(), anyDouble(), anyDouble(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(tripClose, tripFar));
+
+        when(tripMapper.toDTO(tripClose)).thenReturn(TripResponseDTO.builder().tripID(1).build());
+        when(bookingRepository.countByTripAndStatus(any(), any())).thenReturn(0);
 
         // ACT
-        TripResponseDTO result = tripService.getTripById(100);
+        List<TripResponseDTO> results = tripService.searchTrips(searchLat, searchLon, searchLat, searchLon);
+
 
         // ASSERT
-        assertThat(result.getTripID()).isEqualTo(100);
-        assertThat(result.getRemainingSeats()).isEqualTo(4);
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getTripID()).isEqualTo(1);
+
+        verify(tripRepository).searchByBoundingBox(
+                eq(searchLat - 0.1), eq(searchLat + 0.1),
+                eq(searchLon - 0.1), eq(searchLon + 0.1),
+                eq(searchLat - 0.1), eq(searchLat + 0.1),
+                eq(searchLon - 0.1), eq(searchLon + 0.1)
+        );
     }
 
 
     // UPDATE TRIP
 
     @Test
-    void updateTrip_ShouldUpdateFields_WhenExists() {
+    void updateTrip_ShouldRefreshVehicleFromDriver() {
         // ARRANGE
+        TripRequestDTO updateDTO = new TripRequestDTO();
+        updateDTO.setDriverID(1);
+        updateDTO.setTripMessage("Updated msg");
+        updateDTO.setIsLive(false);
+
         when(tripRepository.findById(100)).thenReturn(Optional.of(trip));
         when(userRepository.findById(1)).thenReturn(Optional.of(driver));
-        when(vehicleRepository.findById("ABC-123")).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findFirstByOwner(driver)).thenReturn(Optional.of(vehicle));
         when(tripRepository.save(trip)).thenReturn(trip);
-        when(tripMapper.toDTO(trip)).thenReturn(TripResponseDTO.builder().build());
-
-        tripRequestDTO.setStartLat(10.0f);
+        when(tripMapper.toDTO(trip)).thenReturn(tripResponseDTO);
 
         // ACT
-        tripService.updateTrip(100, tripRequestDTO);
+        tripService.updateTrip(100, updateDTO);
 
         // ASSERT
-        assertThat(trip.getStartLat()).isEqualTo(10.0f);
-        verify(tripRepository).save(trip);
+        assertThat(trip.getTripMessage()).isEqualTo("Updated msg");
+        assertThat(trip.isLive()).isFalse();
+
+        verify(vehicleRepository).findFirstByOwner(driver);
     }
 
     // END TRIP
 
     @Test
-    void endTrip_ShouldCalculateStats_AndCloseTrip() {
+    void endTrip_ShouldCalculateStatsAndUpdateDriver() {
         // ARRANGE
-        when(tripRepository.findById(100)).thenReturn(Optional.of(trip));
+        trip.setStartLat(0.0);
+        trip.setStartLon(0.0);
+        trip.setEndLat(1.0);
+        trip.setEndLon(1.0);
 
-        when(tripMapper.toDTO(trip)).thenReturn(TripResponseDTO.builder().build());
+        when(tripRepository.findById(100)).thenReturn(Optional.of(trip));
+        when(tripMapper.toDTO(trip)).thenReturn(tripResponseDTO);
+        when(bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED)).thenReturn(0);
+
+        double initialDriverDistance = driver.getDistance();
+        double initialDriverCo2 = driver.getCo2();
 
         // ACT
         TripResponseDTO result = tripService.endTrip(100);
 
         // ASSERT
-
         assertThat(trip.isLive()).isFalse();
         verify(tripRepository).save(trip);
 
-        verify(userRepository).save(driver);
+        assertThat(driver.getDistance()).isGreaterThan(initialDriverDistance);
+        assertThat(driver.getCo2()).isGreaterThan(initialDriverCo2);
 
-        assertThat(driver.getDistance()).isGreaterThan(0);
-        assertThat(driver.getCo2()).isGreaterThan(0);
+        verify(userRepository).save(driver);
 
         assertThat(result.getDistance()).isGreaterThan(0);
         assertThat(result.getCo2()).isGreaterThan(0);
@@ -185,7 +235,7 @@ public class VroomMatesTripServiceTests {
     @Test
     void endTrip_ShouldThrowException_WhenTripAlreadyEnded() {
         // ARRANGE
-        trip.setLive(false); // Már lezárt fuvar
+        trip.setLive(false);
         when(tripRepository.findById(100)).thenReturn(Optional.of(trip));
 
         // ACT & ASSERT
@@ -193,23 +243,5 @@ public class VroomMatesTripServiceTests {
         assertThat(ex.getMessage()).isEqualTo("Trip already ended");
 
         verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void endTrip_ShouldHandleNullDriverStats() {
-        // ARRANGE
-        driver.setDistance(null);
-        driver.setCo2(null);
-
-        when(tripRepository.findById(100)).thenReturn(Optional.of(trip));
-        when(tripMapper.toDTO(trip)).thenReturn(TripResponseDTO.builder().build());
-
-        // ACT
-        tripService.endTrip(100);
-
-        // ASSERT
-        assertThat(driver.getDistance()).isNotNull();
-        assertThat(driver.getCo2()).isNotNull();
-        verify(userRepository).save(driver);
     }
 }

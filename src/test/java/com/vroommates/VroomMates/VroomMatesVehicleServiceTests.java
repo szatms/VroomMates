@@ -50,24 +50,48 @@ class VroomMatesVehicleServiceTests {
         requestDTO = new VehicleRequestDTO();
         requestDTO.setPlate(PLATE);
         requestDTO.setOwnerID(1);
-        requestDTO.setMake(1);
+        requestDTO.setMake("Toyota");
         requestDTO.setModel("Corolla");
         requestDTO.setSeats(5);
+        requestDTO.setSeats(5);
+        requestDTO.setYear(2020);
+        requestDTO.setColour("Red");
+        requestDTO.setFuel("Petrol");
+        requestDTO.setPicture("base64string...");
 
         vehicle = Vehicle.builder()
                 .plate(PLATE)
                 .owner(owner)
-                .make(1)
+                .make("Toyota")
                 .model("Corolla")
                 .seats(5)
+                .year(2020)
+                .colour("Red")
+                .fuel("Petrol")
+                .picture("base64string...")
                 .build();
 
         responseDTO = VehicleResponseDTO.builder()
                 .plate(PLATE)
                 .ownerID(1)
+                .make("Toyota")
+                .model("Corolla")
                 .build();
     }
 
+    // CREATE VEHICLE
+
+    @Test
+    void createVehicle_ShouldThrowException_WhenUserNotFound() {
+        // ARRANGE
+        when(userRepository.findById(1)).thenReturn(Optional.empty());
+
+        // ACT & ASSERT
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> vehicleService.createVehicle(requestDTO));
+        assertThat(ex.getMessage()).isEqualTo("User not found");
+
+        verify(vehicleRepository, never()).save(any());
+    }
 
     // GET VEHICLE
 
@@ -117,25 +141,33 @@ class VroomMatesVehicleServiceTests {
     @Test
     void updateVehicle_ShouldUpdateFields_WhenExists() {
         // ARRANGE
-        requestDTO.setModel("Updated Model");
-        requestDTO.setSeats(7);
+        requestDTO.setMake("Honda");
+        requestDTO.setModel("Civic");
+        requestDTO.setYear(2022);
+        requestDTO.setColour("Blue");
+        requestDTO.setFuel("Hybrid");
+        requestDTO.setPicture("newpic...");
+        requestDTO.setSeats(4);
         requestDTO.setOwnerID(1);
 
         when(vehicleRepository.findById(PLATE)).thenReturn(Optional.of(vehicle));
         when(userRepository.findById(1)).thenReturn(Optional.of(owner));
-
         when(vehicleRepository.save(vehicle)).thenReturn(vehicle);
 
-        VehicleResponseDTO updatedResponse = VehicleResponseDTO.builder().model("Updated Model").build();
+        VehicleResponseDTO updatedResponse = VehicleResponseDTO.builder().model("Honda").build();
         when(vehicleMapper.toDTO(vehicle)).thenReturn(updatedResponse);
 
         // ACT
-        VehicleResponseDTO result = vehicleService.updateVehicle(PLATE, requestDTO);
+        vehicleService.updateVehicle(PLATE, requestDTO);
 
         // ASSERT
-        assertThat(vehicle.getModel()).isEqualTo("Updated Model");
-        assertThat(vehicle.getSeats()).isEqualTo(7);
-        assertThat(result.getModel()).isEqualTo("Updated Model");
+        assertThat(vehicle.getMake()).isEqualTo("Honda"); // Toyota -> Honda
+        assertThat(vehicle.getModel()).isEqualTo("Civic");
+        assertThat(vehicle.getYear()).isEqualTo(2022);
+        assertThat(vehicle.getColour()).isEqualTo("Blue");
+        assertThat(vehicle.getFuel()).isEqualTo("Hybrid");
+        assertThat(vehicle.getPicture()).isEqualTo("newpic...");
+        assertThat(vehicle.getSeats()).isEqualTo(4);
 
         verify(vehicleRepository).save(vehicle);
     }
@@ -147,7 +179,6 @@ class VroomMatesVehicleServiceTests {
         User newOwner = User.builder().userId(99).userName("NewOwner").build();
 
         when(vehicleRepository.findById(PLATE)).thenReturn(Optional.of(vehicle));
-
         when(userRepository.findById(99)).thenReturn(Optional.of(newOwner));
 
         when(vehicleRepository.save(vehicle)).thenReturn(vehicle);
@@ -158,7 +189,6 @@ class VroomMatesVehicleServiceTests {
 
         // ASSERT
         assertThat(vehicle.getOwner()).isEqualTo(newOwner);
-        assertThat(vehicle.getOwner().getUserName()).isEqualTo("NewOwner");
     }
 
     @Test
