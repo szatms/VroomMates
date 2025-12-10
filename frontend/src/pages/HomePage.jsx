@@ -118,8 +118,8 @@ export default function HomePage() {
         from: "",
         to: "",
         date: new Date().toISOString().split('T')[0],
-        timeStart: "00:00", // JAVÍTVA: Egész napot lefedje
-        timeEnd: "23:59"    // JAVÍTVA: Hogy az esti 23:00-as fuvar is benne legyen
+        timeStart: "00:00",
+        timeEnd: "23:59"
     });
 
     // --- Segédfüggvények ---
@@ -159,7 +159,6 @@ export default function HomePage() {
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        // Átirányítás a térkép oldalra, átadva a paramétereket és az aktív fület
         navigate('/map', {
             state: {
                 searchParams: searchParams,
