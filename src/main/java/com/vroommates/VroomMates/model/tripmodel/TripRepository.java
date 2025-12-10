@@ -36,4 +36,6 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     List<Trip> searchTrips(double startLat, double startLon, double endLat, double endLon);
 
     long countByIsLiveTrueAndDepartureTimeAfter(java.time.LocalDateTime now);
+
+    Trip findFirstByIsLiveTrueAndDepartureTimeAfterOrderByDepartureTimeAsc(java.time.LocalDateTime now);
 }

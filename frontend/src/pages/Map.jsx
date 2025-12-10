@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import '../assets/style/map.css';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { request } from '../utils/api';
@@ -41,6 +42,7 @@ function LocationSelector({ setOrigin, setDest, originPos, destPos }) {
 }
 
 export default function Map() {
+    const location = useLocation();
     const [mode, setMode] = useState('driver');
 
     const [origin, setOrigin] = useState({ text: "", pos: null });
@@ -53,12 +55,63 @@ export default function Map() {
     const [tripDate, setTripDate] = useState("");
     const [tripTime, setTripTime] = useState("");
 
+    // Új state-ek az időszűréshez
+    const [searchTimeStart, setSearchTimeStart] = useState("00:00");
+    const [searchTimeEnd, setSearchTimeEnd] = useState("23:59");
+
     const [routePath, setRoutePath] = useState([]);
     const [loading, setLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]);
     const [zoom, setZoom] = useState(13);
     const [searchResults, setSearchResults] = useState([]);
 
+    // --- AUTOMATIKUS KITÖLTÉS A HOMEPAGE UTÁN ---
+    useEffect(() => {
+        if (location.state?.searchParams) {
+            const { from, to, date, timeStart, timeEnd } = location.state.searchParams;
+
+            // 1. Mód beállítása
+            if (location.state.activeTab === 'search') {
+                setMode('passenger');
+            }
+
+            // 2. Dátum és Idő beállítása
+            if (date) setTripDate(date);
+            if (timeStart) setSearchTimeStart(timeStart);
+            if (timeEnd) setSearchTimeEnd(timeEnd);
+
+            // 3. Geokódolás a címekhez
+            const geocodeAndSet = async (address, isOrigin) => {
+                if (!address) return;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${address}&limit=1`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        const locData = { text: address, pos: [lat, lon] };
+
+                        if (isOrigin) {
+                            setOrigin(locData);
+                            setMapCenter([lat, lon]);
+                        } else {
+                            setDest(locData);
+                        }
+                    } else {
+                        if (isOrigin) setOrigin({ text: address, pos: null });
+                        else setDest({ text: address, pos: null });
+                    }
+                } catch (e) {
+                    console.error("Geokódolási hiba:", e);
+                }
+            };
+
+            geocodeAndSet(from, true);
+            geocodeAndSet(to, false);
+        }
+    }, [location.state]);
+
+    // Suggestion Logic
     useEffect(() => {
         const timer = setTimeout(() => {
             if (origin.text && !origin.pos) fetchSuggestions(origin.text, setOriginSuggestions);
@@ -76,7 +129,7 @@ export default function Map() {
     const fetchSuggestions = async (query, setSuggestions) => {
         if (query.length < 3) return;
         try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&addressdetails=1&limit=5`);
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&addressdetails=1&limit=5&countrycodes=hu`);
             const data = await response.json();
             setSuggestions(data);
         } catch (error) {
@@ -117,15 +170,12 @@ export default function Map() {
         try {
         await request('/trips', 'POST', {
                 driverID: Number(ownerID),
-
                 startLat: origin.pos[0],
                 startLon: origin.pos[1],
                 startLocation: origin.text,
-
                 endLat: dest.pos[0],
                 endLon: dest.pos[1],
                 endLocation: dest.text,
-
                 tripMessage: comment,
                 departureTime: `${tripDate}T${tripTime}:00`,
                 isLive: true
@@ -141,7 +191,7 @@ export default function Map() {
 
     const handleSearchTrip = async () => {
         if (!origin.pos || !dest.pos) {
-            alert("Add meg az indulási és érkezési pontot!");
+            alert("Kérlek válassz a listából pontos címet, hogy meglegyenek a koordináták!");
             return;
         }
         setLoading(true);
@@ -154,10 +204,28 @@ export default function Map() {
             });
 
             const results = await request(`/trips/search?${queryParams.toString()}`, 'GET');
-            setSearchResults(results);
 
-            if (results.length === 0) {
-                alert("Sajnos nem találtunk fuvarokat ezen az útvonalon.");
+            // --- JAVÍTOTT IDŐSZŰRÉS LOGIKA ---
+            const filteredResults = results.filter(trip => {
+                const tripDateObj = new Date(trip.departureTime);
+
+                // 1. Dátum egyezés (Helyi formátumra alakítva: 'YYYY-MM-DD')
+                if (tripDate) {
+                    // sv-SE formátum ISO-szerű (YYYY-MM-DD), de figyelembe veszi a helyi zónát
+                    const tDate = tripDateObj.toLocaleDateString('sv-SE');
+                    if (tDate !== tripDate) return false;
+                }
+
+                // 2. Időintervallum szűrés
+                const tTime = tripDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+                return tTime >= searchTimeStart && tTime <= searchTimeEnd;
+            });
+
+            setSearchResults(filteredResults);
+
+            if (filteredResults.length === 0) {
+                alert("Sajnos nem találtunk fuvarokat a megadott feltételekkel.");
             }
         } catch (error) {
             console.error("Keresési hiba:", error);
@@ -190,7 +258,6 @@ export default function Map() {
             <div className="map-page-container">
                 <div className="travel-sidebar">
 
-                    {/* --- MÓD VÁLASZTÓ GOMBOK (Emojik nélkül) --- */}
                     <div className="btn-group w-100 mb-4">
                         <button
                             className={`btn ${mode === 'driver' ? 'btn-warning' : 'btn-outline-light'}`}
@@ -211,7 +278,6 @@ export default function Map() {
                     </h2>
 
                     <div className="travel-form d-flex flex-column gap-3">
-                        {/* INPUTOK */}
                         <div className="input-wrapper input-container">
                             <label className="small fw-bold">Indulás <span className="required-star">*</span></label>
                             <input type="text" className="form-control map-input" value={origin.text} placeholder="Honnan indulsz?"
@@ -261,9 +327,27 @@ export default function Map() {
                         )}
 
                         {mode === 'passenger' && (
-                            <button className="btn btn-info w-100 mt-2 py-2 fw-bold" onClick={handleSearchTrip} disabled={loading}>
-                                {loading ? "Keresés..." : "Fuvarok Listázása"}
-                            </button>
+                            <>
+                                <div className="input-wrapper">
+                                    <label className="small fw-bold mb-1">Dátum</label>
+                                    <input type="date" className="form-control map-input" value={tripDate} onChange={(e) => setTripDate(e.target.value)} />
+                                </div>
+
+                                <div className="row">
+                                    <div className="col-6">
+                                        <label className="small fw-bold mb-1">Legkorábban</label>
+                                        <input type="time" className="form-control map-input" value={searchTimeStart} onChange={(e) => setSearchTimeStart(e.target.value)} />
+                                    </div>
+                                    <div className="col-6">
+                                        <label className="small fw-bold mb-1">Legkésőbb</label>
+                                        <input type="time" className="form-control map-input" value={searchTimeEnd} onChange={(e) => setSearchTimeEnd(e.target.value)} />
+                                    </div>
+                                </div>
+
+                                <button className="btn btn-info w-100 mt-2 py-2 fw-bold" onClick={handleSearchTrip} disabled={loading}>
+                                    {loading ? "Keresés..." : "Fuvarok Listázása"}
+                                </button>
+                            </>
                         )}
 
                         {mode === 'passenger' && searchResults.length > 0 && (
@@ -277,7 +361,10 @@ export default function Map() {
                                                 <span className="badge bg-success">{new Date(trip.departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                                             </div>
                                             <div className="small mt-1">Sofőr: {trip.driverName || "Ismeretlen"}</div>
-                                            <div className="small">Szabad hely: {trip.remainingSeats}</div>
+                                            <div className="small text-truncate">Honnan: {trip.startLocation}</div>
+                                            <div className="small text-truncate">Hová: {trip.endLocation}</div>
+                                            <div className="small text-end mt-1 text-info fw-bold">{trip.remainingSeats} szabad hely</div>
+
                                             <button className="btn btn-sm btn-outline-light w-100 mt-2" onClick={() => handleJoinTrip(trip.tripID)}>
                                                 Jelentkezés
                                             </button>
