@@ -1,5 +1,3 @@
-// frontend/src/pages/HomePage.jsx
-
 import React from 'react';
 import Navbar from '../components/Navbar.jsx';
 import '../assets/style/homepage.css';
@@ -122,7 +120,6 @@ export default function HomePage() {
                     </div>
                 </div>
 
-                {/* --- 3. STATISZTIKA --- */}
                 <h4 className="px-3 mb-3 text-white">Statisztika</h4>
                 <div className="row g-4 px-3 mb-5">
                     <div className="col-md-4">

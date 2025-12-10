@@ -8,11 +8,13 @@ import RateDriver from "./pages/RateDriver.jsx";
 import PassengerRating from "./pages/RatePassenger.jsx";
 import Vehicle from "./pages/Vehicle.jsx";
 import DriverDashboard from "./pages/DriverDashboard.jsx";
+import Settings from './pages/Settings';
 
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/ratedriver" element={<RateDriver />} />
                 <Route path="/ratepassenger" element={<PassengerRating />} />
                 <Route path="/user/vehicle" element={<Vehicle/>} />

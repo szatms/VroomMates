@@ -12,7 +12,7 @@ const Navbar = () => {
             setIsLoggedIn(true);
 
             const savedName = localStorage.getItem('userName');
-            const savedRole = localStorage.getItem('role'); // <-- ROLE KIOLVASÁSA
+            const savedRole = localStorage.getItem('role'); //
 
             setUserData({ name: savedName || "Felhasználó" });
             if (savedRole) setUserRole(savedRole);
@@ -22,7 +22,7 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('userName');
-        localStorage.removeItem('role'); // <-- töröljük a role-t is
+        localStorage.removeItem('role'); //
         setIsLoggedIn(false);
         setUserData(null);
         setUserRole(null);
@@ -33,7 +33,7 @@ const Navbar = () => {
         <nav className="navbar navbar-expand-lg sticky-top">
             <div className="container-fluid">
                 <a className="navbar-brand" href="/">
-                    <img src="../public/images/logo.jpeg" alt="Logo"/>
+                    <img src="/images/logo.jpeg" alt="Logo"/>
                 </a>
 
                 <button
