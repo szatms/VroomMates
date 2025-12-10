@@ -6,17 +6,29 @@ import Navbar from '../components/Navbar.jsx';
 
 export default function Settings() {
     const [user, setUser] = useState(null);
+    const [vehicle, setVehicle] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     // --- 1. Adatok betöltése ---
     useEffect(() => {
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             try {
+                // User betöltése
                 const userData = await request("/users/me");
                 setUser(userData);
-                if (userData.role) {
-                    localStorage.setItem('role', userData.role);
+                if (userData.role) localStorage.setItem('role', userData.role);
+
+                // Autó betöltése (ha van ID)
+                const currentUserId = userData.id || userData.userId || localStorage.getItem('userId');
+
+                if (currentUserId) {
+                    try {
+                        const vehicleData = await request(`/vehicles/owner/${currentUserId}`);
+                        setVehicle(vehicleData);
+                    } catch (e) {
+                        setVehicle(null);
+                    }
                 }
             } catch (error) {
                 console.error("Hiba az adatok betöltésekor", error);
@@ -24,58 +36,57 @@ export default function Settings() {
                 setLoading(false);
             }
         };
-        fetchUserData();
+        fetchData();
     }, []);
 
     // --- 2. Státusz váltó logika ---
-    const handleDriverStatusChange = async (isDriverValue) => {
-        const newRole = isDriverValue ? 'DRIVER' : 'PASSENGER';
+    const handleDriverStatusChange = async (targetIsDriver) => {
+        const newRole = targetIsDriver ? 'DRIVER' : 'PASSENGER';
 
-        // UI frissítés
         setUser(prev => ({
             ...prev,
-            driver: isDriverValue,
+            isDriver: targetIsDriver,
             role: newRole
         }));
         localStorage.setItem('role', newRole);
 
-        if (!localStorage.getItem('userId'))     {
-            console.error("HIBA: Nincs user ID!");
-            return;
-        }
+        const userId = user?.id || localStorage.getItem('userId');
+        if (!userId) return;
 
         try {
-            const updatedUser = await request(`/users/${localStorage.getItem('userId')}`, "PUT", {
-                driver: isDriverValue
+            const updatedUser = await request(`/users/${userId}`, "PUT", {
+                isDriver: targetIsDriver,
+                driver: targetIsDriver
             });
-            setUser(updatedUser);
+
+            // Biztosítjuk, hogy a válasz alapján frissüljön az isDriver
+            const finalIsDriver = (updatedUser.driver !== undefined) ? updatedUser.driver : updatedUser.isDriver;
+            setUser({ ...updatedUser, isDriver: finalIsDriver });
+
         } catch (error) {
-            console.error("Hiba a mentéskor:", error);
-            setUser(prev => ({ ...prev, isDriver: !isDriverValue }));
-            localStorage.setItem('role', !isDriverValue ? 'DRIVER' : 'PASSENGER');
+            console.error("Hiba mentéskor:", error);
+            setUser(prev => ({ ...prev, isDriver: !targetIsDriver }));
         }
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('role');
+        localStorage.clear();
         navigate('/login');
     };
 
     if (loading) return <div className="settings-loading">Loading...</div>;
+
     const userData = user || {};
+    // Ha nincs autó adat, üres objektumot használunk
+    const carData = vehicle || {};
 
     return (
         <>
             <Navbar />
             <div className="settings-page">
                 <div className="settings-container">
-                    {/* --- HEADER --- */}
                     <header className="settings-header">
-                        <div className="header-left">
-                            <i className="bi bi-gear-fill" style={{ fontSize: '3rem' }}></i>
-                        </div>
+                        <div className="header-left"><i className="bi bi-gear-fill" style={{ fontSize: '3rem' }}></i></div>
                         <h1 className="header-title">SETTINGS</h1>
                         <div className="header-buttons">
                             <button className="btn-custom btn-logout" onClick={handleLogout}>LOG OUT</button>
@@ -87,44 +98,39 @@ export default function Settings() {
                         {/* --- BAL OLDAL: PROFILE ADATOK --- */}
                         <div className="column profile-column">
                             <h2 className="section-title">PROFILE</h2>
-
                             <div className="info-grid">
-                                <div className="info-row">
-                                    <span className="label">NAME</span>
-                                    <span className="value">{userData.displayName || "John Doe"}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">NICKNAME</span>
-                                    <span className="value">{userData.userName || "Gigachad"}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">DATE OF BIRTH</span>
-                                    <span className="value">{userData.birthDate || "1969.05.13."}</span>
-                                </div>
+                                <div className="info-row"><span className="label">NAME</span><span className="value">{userData.displayName || "User"}</span></div>
+                                <div className="info-row"><span className="label">NICKNAME</span><span className="value">{userData.userName || "-"}</span></div>
+                                <div className="info-row"><span className="label">DATE OF BIRTH</span><span className="value">{userData.birthDate || "-"}</span></div>
+
+                                {/* --- AUTÓ ADATOK (A JSON alapján) --- */}
                                 <div className="info-row">
                                     <span className="label">CAR</span>
-                                    <span className="value">{userData.carType || "Honda Civic Type R"}</span>
+                                    <span className="value">
+                                        {carData.make ? `${carData.make} ${carData.model}` : (userData.carType || "-")}
+                                    </span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="label">YEAR / FUEL</span>
+                                    <span className="value">
+                                        {carData.year ? `${carData.year}, ${carData.fuel}` : "-"}
+                                    </span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="label">PLATE NUMBER</span>
+                                    <span className="value" style={{textTransform: 'uppercase'}}>
+                                        {carData.plate || "-"}
+                                    </span>
                                 </div>
                                 <div className="info-row">
                                     <span className="label">PASSENGER SEATS</span>
-                                    <span className="value text-end">{userData.seats || "4"}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">HOME ADDRESS</span>
-                                    <span className="value text-end" style={{ maxWidth: '60%' }}>{userData.homeAddress || "1234 Exa City, Example street 1/A"}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">WORKPLACE ADDRESS</span>
-                                    <span className="value text-end" style={{ maxWidth: '60%' }}>{userData.workAddress || "4028 Debrecen, Kassai road 26."}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">WORK SCHEDULE</span>
-                                    <span className="value text-end">{userData.schedule || "M - F, 9 - 5"}</span>
+                                    <span className="value text-end">
+                                        {carData.seats || userData.seats || "-"}
+                                    </span>
                                 </div>
 
-                                {/* --- RÁDIÓ GOMBOK SZEKCIÓ --- */}
+                                {/* --- RÁDIÓ GOMBOK --- */}
                                 <div className="radio-section mt-4 mb-4">
-                                    {/* Active Driver */}
                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                         <span className="label">ACTIVE DRIVER</span>
                                         <div className="radio-options">
@@ -132,19 +138,18 @@ export default function Settings() {
                                                 <input
                                                     type="radio"
                                                     name="activeDriver"
-                                                    checked={!!userData.isDriver}
+                                                    checked={userData.isDriver === true}
                                                     onChange={() => handleDriverStatusChange(true)}
                                                     className="me-1"
                                                     style={{ cursor: 'pointer' }}
                                                 />
                                                 YES
                                             </label>
-
                                             <label style={{ cursor: 'pointer' }}>
                                                 <input
                                                     type="radio"
                                                     name="activeDriver"
-                                                    checked={!userData.isDriver}
+                                                    checked={userData.isDriver !== true}
                                                     onChange={() => handleDriverStatusChange(false)}
                                                     className="me-1"
                                                     style={{ cursor: 'pointer' }}
@@ -154,40 +159,33 @@ export default function Settings() {
                                         </div>
                                     </div>
                                 </div>
-                                {/* --- RÁDIÓ GOMBOK VÉGE --- */}
 
                                 <div className="profile-images mt-5 text-center">
                                     <img src={userData.pfp || "/images/avatar-placeholder.png"} className="circle-img me-3" alt="Pfp" />
-                                    {userData.isDriver && <img src="/images/car-placeholder.jpg" className="circle-img" alt="Car" />}
+
+                                    {/* Csak akkor mutatjuk az autót, ha driver ÉS van autója */}
+                                    {userData.isDriver && (
+                                        <img
+                                            // A JSON-ben "picture" mezőben jön a base64 string
+                                            src={carData.picture || "/images/car-placeholder.jpg"}
+                                            className="circle-img"
+                                            alt="Car"
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* --- JOBB OLDAL: BEÁLLÍTÁSOK --- */}
+                        {/* --- JOBB OLDAL --- */}
                         <div className="column other-column">
                             <h2 className="section-title">OTHER</h2>
                             <div className="settings-list">
-                                <div className="setting-item">
-                                    <span className="label">NOTIFICATIONS</span>
-                                    <button className="btn-toggle on">ON</button>
-                                </div>
-                                <div className="setting-item">
-                                    <span className="label">CHANGE PASSWORD</span>
-                                    <button className="btn-action">CHANGE</button>
-                                </div>
-                                <div className="setting-item">
-                                    <span className="label">THEME</span>
-                                    <button className="btn-action">DARK</button>
-                                </div>
+                                <div className="setting-item"><span className="label">NOTIFICATIONS</span><button className="btn-toggle on">ON</button></div>
+                                <div className="setting-item"><span className="label">CHANGE PASSWORD</span><button className="btn-action">CHANGE</button></div>
+                                <div className="setting-item"><span className="label">THEME</span><button className="btn-action">DARK</button></div>
                                 <div className="mt-5 footer-area">
-                                    <div className="d-flex justify-content-between">
-                                        <span>VERSION</span>
-                                        <span>0.0.1</span>
-                                    </div>
-                                    <div className="d-flex justify-content-between mt-3 text-danger fw-bold">
-                                        <span>DELETE ACCOUNT</span>
-                                        <button className="btn btn-danger btn-sm">DELETE</button>
-                                    </div>
+                                    <div className="d-flex justify-content-between"><span>VERSION</span><span>0.0.1</span></div>
+                                    <div className="d-flex justify-content-between mt-3 text-danger fw-bold"><span>DELETE ACCOUNT</span><button className="btn btn-danger btn-sm">DELETE</button></div>
                                 </div>
                             </div>
                         </div>

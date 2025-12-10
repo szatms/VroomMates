@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar.jsx';
 import '../assets/style/homepage.css';
 import { request } from '../utils/api';
 
+// ... (Stílus és komponensek maradnak a régiek) ...
 // --- STÍLUS KONSTANS ---
 const gradientStyle = {
     background: "linear-gradient(135deg, #145b32 0%, #198754 100%)",
@@ -26,7 +27,7 @@ const StarIcon = ({ filled }) => (
     </svg>
 );
 
-// --- BELSŐ KOMPONENS: Cím kereső (Debounced) ---
+// --- Cím kereső ---
 const AddressAutocomplete = ({ placeholder, value, onChange, icon }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -46,9 +47,7 @@ const AddressAutocomplete = ({ placeholder, value, onChange, icon }) => {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (value && value.length > 2) {
-                fetchAddresses(value);
-            }
+            if (value && value.length > 2) fetchAddresses(value);
         }, 500);
         return () => clearTimeout(timer);
     }, [value]);
@@ -61,9 +60,7 @@ const AddressAutocomplete = ({ placeholder, value, onChange, icon }) => {
 
     useEffect(() => {
         function handleClickOutside(event) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-                setShowSuggestions(false);
-            }
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setShowSuggestions(false);
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -72,27 +69,13 @@ const AddressAutocomplete = ({ placeholder, value, onChange, icon }) => {
     return (
         <div className="mb-3 position-relative" ref={wrapperRef}>
             <div className="input-group">
-                <span className="input-group-text bg-white border-end-0">
-                    <i className={`${icon} text-success`}></i>
-                </span>
-                <input
-                    type="text"
-                    className="form-control border-start-0"
-                    placeholder={placeholder}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    autoComplete="off"
-                />
+                <span className="input-group-text bg-white border-end-0"><i className={`${icon} text-success`}></i></span>
+                <input type="text" className="form-control border-start-0" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" />
             </div>
             {showSuggestions && suggestions.length > 0 && (
                 <ul className="list-group position-absolute w-100 shadow" style={{ zIndex: 1000, top: "100%" }}>
                     {suggestions.map((item, idx) => (
-                        <li
-                            key={idx}
-                            className="list-group-item list-group-item-action"
-                            onClick={() => handleSelect(item)}
-                            style={{cursor: 'pointer', color: '#000', fontSize: '0.9rem'}}
-                        >
+                        <li key={idx} className="list-group-item list-group-item-action" onClick={() => handleSelect(item)} style={{cursor: 'pointer', color: '#000', fontSize: '0.9rem'}}>
                             {item.display_name}
                         </li>
                     ))}
@@ -104,37 +87,19 @@ const AddressAutocomplete = ({ placeholder, value, onChange, icon }) => {
 
 export default function HomePage() {
     const navigate = useNavigate();
-
-    // --- State-ek ---
-    const [stats, setStats] = useState({
-        totalDrivers: 0,
-        totalPassengers: 0,
-        activeTrips: 0,
-        latestRatings: []
-    });
+    const [stats, setStats] = useState({ totalDrivers: 0, totalPassengers: 0, activeTrips: 0, latestRatings: [] });
     const [featuredTrips, setFeaturedTrips] = useState([]);
-
     const [searchParams, setSearchParams] = useState({
-        from: "",
-        to: "",
-        date: new Date().toISOString().split('T')[0],
-        timeStart: "00:00", // JAVÍTVA: Egész napot lefedje
-        timeEnd: "23:59"    // JAVÍTVA: Hogy az esti 23:00-as fuvar is benne legyen
+        from: "", to: "", date: new Date().toISOString().split('T')[0], timeStart: "00:00", timeEnd: "23:59"
     });
 
-    // --- Segédfüggvények ---
-    const getCity = (fullAddress) => {
-        if (!fullAddress) return "";
-        return fullAddress.split(',')[0].trim();
-    };
+    const getCity = (fullAddress) => fullAddress ? fullAddress.split(',')[0].trim() : "";
 
     const getDetails = (fullAddress) => {
         if (!fullAddress) return "";
         const parts = fullAddress.split(',');
         if (parts.length < 2) return "";
-        const details = parts.slice(1).join(',').trim();
-        if (!details) return "";
-        return details.length > 60 ? details.substring(0, 60) + "..." : details;
+        return parts.slice(1).join(',').trim().substring(0, 40) + (fullAddress.length > 40 ? "..." : "");
     };
 
     useEffect(() => {
@@ -145,13 +110,15 @@ export default function HomePage() {
 
                 const tripsData = await request('/trips');
                 if (tripsData && tripsData.length > 0) {
-                    const now = new Date();
-                    const futureTrips = tripsData.filter(t => new Date(t.departureTime) > now);
-                    futureTrips.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
-                    setFeaturedTrips(futureTrips);
+                    // Csak azokat mutatjuk, amik MÉG nem lettek manuálisan lezárva (isLive=true)
+                    const activeTrips = tripsData
+                        .filter(t => (t.live === true || t.isLive === true))
+                        .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+
+                    setFeaturedTrips(activeTrips);
                 }
             } catch (error) {
-                console.error("Hiba az adatok betöltésekor:", error);
+                console.error("Adathiba:", error);
             }
         };
         fetchHomeData();
@@ -159,168 +126,98 @@ export default function HomePage() {
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        // Átirányítás a térkép oldalra, átadva a paramétereket és az aktív fület
-        navigate('/map', {
-            state: {
-                searchParams: searchParams,
-                activeTab: 'search'
-            }
-        });
+        navigate('/map', { state: { searchParams: searchParams, activeTab: 'search' } });
     };
 
     return (
         <>
             <Navbar />
-
             <div className="home-page-content-container py-5">
-
                 <header className="header-section mb-5 px-3">
                     <h1>Spórolj az utazáson</h1>
                     <p>Utazz autóban, spórolj és védd a környezetet!</p>
                 </header>
 
                 <div className="row g-4 mb-5 mx-0 px-3">
-
-                    {/* --- BAL OLDAL: KERESŐ --- */}
+                    {/* BAL OLDAL: KERESŐ */}
                     <div className="col-lg-6 col-md-12">
                         <div className="search-box p-4 shadow h-100" style={gradientStyle}>
-                            <h4 className="mb-4 text-white">
-                                <i className="fas fa-search me-2"></i>Hová utazol?
-                            </h4>
+                            <h4 className="mb-4 text-white"><i className="fas fa-search me-2"></i>Hová utazol?</h4>
                             <form onSubmit={handleSearchSubmit}>
-                                <AddressAutocomplete
-                                    icon="fas fa-map-marker-alt"
-                                    placeholder="Indulás (pl. Debrecen, Csapó utca)"
-                                    value={searchParams.from}
-                                    onChange={(val) => setSearchParams({...searchParams, from: val})}
-                                />
-
-                                <AddressAutocomplete
-                                    icon="fas fa-map-pin"
-                                    placeholder="Érkezés (pl. Budapest)"
-                                    value={searchParams.to}
-                                    onChange={(val) => setSearchParams({...searchParams, to: val})}
-                                />
-
+                                <AddressAutocomplete icon="fas fa-map-marker-alt" placeholder="Indulás" value={searchParams.from} onChange={(val) => setSearchParams({...searchParams, from: val})} />
+                                <AddressAutocomplete icon="fas fa-map-pin" placeholder="Érkezés" value={searchParams.to} onChange={(val) => setSearchParams({...searchParams, to: val})} />
                                 <div className="mb-3">
                                     <label className="small text-white-50 mb-1">Utazás dátuma</label>
-                                    <input
-                                        type="date"
-                                        className="form-control"
-                                        value={searchParams.date}
-                                        onChange={(e) => setSearchParams({...searchParams, date: e.target.value})}
-                                    />
+                                    <input type="date" className="form-control" value={searchParams.date} onChange={(e) => setSearchParams({...searchParams, date: e.target.value})} />
                                 </div>
-
-                                <label className="small text-white-50 mb-1">Keresési idősáv</label>
                                 <div className="row mb-4">
                                     <div className="col-6">
-                                        <div className="input-group">
-                                            <span className="input-group-text bg-white border-end-0"><small>Tól</small></span>
-                                            <input
-                                                type="time"
-                                                className="form-control border-start-0"
-                                                value={searchParams.timeStart}
-                                                onChange={(e) => setSearchParams({...searchParams, timeStart: e.target.value})}
-                                            />
-                                        </div>
+                                        <input type="time" className="form-control" value={searchParams.timeStart} onChange={(e) => setSearchParams({...searchParams, timeStart: e.target.value})} />
                                     </div>
                                     <div className="col-6">
-                                        <div className="input-group">
-                                            <span className="input-group-text bg-white border-end-0"><small>Ig</small></span>
-                                            <input
-                                                type="time"
-                                                className="form-control border-start-0"
-                                                value={searchParams.timeEnd}
-                                                onChange={(e) => setSearchParams({...searchParams, timeEnd: e.target.value})}
-                                            />
-                                        </div>
+                                        <input type="time" className="form-control" value={searchParams.timeEnd} onChange={(e) => setSearchParams({...searchParams, timeEnd: e.target.value})} />
                                     </div>
                                 </div>
-
-                                <button type="submit" className="btn btn-warning w-100 py-2 fw-bold text-dark shadow-sm">
-                                    Keresés
-                                </button>
+                                <button type="submit" className="btn btn-warning w-100 py-2 fw-bold text-dark shadow-sm">Keresés</button>
                             </form>
                         </div>
                     </div>
 
-                    {/* --- JOBB OLDAL: CAROUSEL --- */}
+                    {/* JOBB OLDAL: CAROUSEL (JAVÍTOTT CÍMKE) */}
                     <div className="col-lg-6 col-md-12">
                         <div id="driverCarousel" className="carousel slide shadow h-100" data-bs-ride="carousel" style={gradientStyle}>
-
                             {featuredTrips.length > 1 && (
                                 <>
-                                    <button className="carousel-control-prev" type="button" data-bs-target="#driverCarousel" data-bs-slide="prev">
-                                        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                                        <span className="visually-hidden">Előző</span>
-                                    </button>
-                                    <button className="carousel-control-next" type="button" data-bs-target="#driverCarousel" data-bs-slide="next">
-                                        <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                                        <span className="visually-hidden">Következő</span>
-                                    </button>
+                                    <button className="carousel-control-prev" type="button" data-bs-target="#driverCarousel" data-bs-slide="prev"><span className="carousel-control-prev-icon"></span></button>
+                                    <button className="carousel-control-next" type="button" data-bs-target="#driverCarousel" data-bs-slide="next"><span className="carousel-control-next-icon"></span></button>
                                 </>
                             )}
-
                             <div className="carousel-inner h-100">
                                 {featuredTrips.length === 0 ? (
                                     <div className="carousel-item active h-100">
                                         <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4 text-white">
-                                            <i className="fas fa-road fa-3x text-white-50 mb-3"></i>
                                             <h4>Nincs aktív út jelenleg</h4>
                                             <p className="text-white-50">Légy te az első, aki hirdet!</p>
                                         </div>
                                     </div>
                                 ) : (
-                                    featuredTrips.map((trip, index) => (
-                                        <div key={trip.tripID || index} className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`}>
-                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4 text-white">
+                                    featuredTrips.map((trip, index) => {
+                                        // JAVÍTÁS: Időbeli ellenőrzés a címkéhez
+                                        const isOngoing = new Date() > new Date(trip.departureTime);
+                                        const labelText = isOngoing ? "JELENLEG ZAJLIK" : "KÖVETKEZŐ JÁRAT";
+                                        const labelClass = isOngoing ? "text-warning" : "text-white-50";
 
-                                                <small className="text-uppercase text-white-50 fw-bold mb-3" style={{letterSpacing: "2px"}}>
-                                                    Következő járat
-                                                </small>
+                                        return (
+                                            <div key={trip.tripID} className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`}>
+                                                <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4 text-white">
 
-                                                <div className="mb-1 w-100">
-                                                    <h3 className="fw-bold mb-0 text-warning">
-                                                        {getCity(trip.startLocation || trip.startPoint)}
-                                                    </h3>
-                                                    <small className="text-white-50 d-block mx-auto text-truncate" style={{maxWidth: "90%", minHeight: "20px"}}>
-                                                        {getDetails(trip.startLocation || trip.startPoint)}
+                                                    {/* DINAMIKUS CÍMKE */}
+                                                    <small className={`text-uppercase fw-bold mb-3 ${labelClass}`} style={{letterSpacing: "2px"}}>
+                                                        {labelText}
                                                     </small>
-                                                </div>
 
-                                                <i className="fas fa-arrow-down text-white my-3"></i>
+                                                    <div className="text-center mb-2">
+                                                        <h3 className="fw-bold mb-0 text-white">{getCity(trip.startLocation)}</h3>
+                                                        <small className="d-block text-white-50">{getDetails(trip.startLocation)}</small>
+                                                    </div>
 
-                                                <div className="mb-4 w-100">
-                                                    <h3 className="fw-bold mb-0 text-warning">
-                                                        {getCity(trip.endLocation || trip.endPoint)}
-                                                    </h3>
-                                                    <small className="text-white-50 d-block mx-auto text-truncate" style={{maxWidth: "90%", minHeight: "20px"}}>
-                                                        {getDetails(trip.endLocation || trip.endPoint)}
-                                                    </small>
-                                                </div>
+                                                    <i className="fas fa-arrow-down text-white my-2"></i>
 
-                                                <div className="d-flex justify-content-center align-items-center gap-3 fw-bold">
-                                                    <span>
-                                                        <i className="far fa-calendar-alt me-2"></i>
-                                                        {new Date(trip.departureTime).toLocaleDateString('hu-HU')}
-                                                    </span>
-                                                    <span>|</span>
-                                                    <span>
-                                                        <i className="far fa-clock me-2"></i>
-                                                        {new Date(trip.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                    </span>
-                                                </div>
+                                                    <div className="text-center mb-3">
+                                                        <h3 className="fw-bold mb-0 text-white">{getCity(trip.endLocation)}</h3>
+                                                        <small className="d-block text-white-50">{getDetails(trip.endLocation)}</small>
+                                                    </div>
 
-                                                <div className="mt-4 px-4 py-2 bg-white rounded-pill text-dark shadow-sm">
-                                                    <span className="fw-bold text-success">
-                                                        <i className="fas fa-chair me-2"></i>
+                                                    <div className="mt-2 fw-bold text-warning">
+                                                        {new Date(trip.departureTime).toLocaleDateString()} | {new Date(trip.departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                    </div>
+                                                    <div className="mt-3 badge bg-white text-dark p-2">
                                                         {trip.remainingSeats} szabad hely
-                                                    </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>
@@ -368,24 +265,14 @@ export default function HomePage() {
                         stats.latestRatings.map((rating, idx) => (
                             <div key={idx} className="col-md-4">
                                 <div className="card h-100 shadow p-4" style={gradientStyle}>
-
                                     <div className="mb-3 d-flex">
                                         {[...Array(5)].map((_, i) => (
                                             <StarIcon key={i} filled={i < rating.score} />
                                         ))}
                                     </div>
-
                                     <h5 className="fst-italic text-white mb-3">"{rating.comment}"</h5>
-
                                     <div className="d-flex align-items-center mt-auto border-top border-secondary pt-3">
-                                        <img
-                                            src={rating.raterPfp || "/images/avatar-placeholder.png"}
-                                            className="rounded-circle me-3 border border-white"
-                                            width="45"
-                                            height="45"
-                                            style={{objectFit: "cover"}}
-                                            alt="User"
-                                        />
+                                        <img src={rating.raterPfp || "/images/avatar-placeholder.png"} className="rounded-circle me-3 border border-white" width="45" height="45" style={{objectFit: "cover"}} alt="User" />
                                         <div>
                                             <small className="fw-bold text-white d-block">{rating.raterName}</small>
                                             <small className="text-white-50">Utas</small>
@@ -396,7 +283,6 @@ export default function HomePage() {
                         ))
                     )}
                 </div>
-
             </div>
         </>
     );
