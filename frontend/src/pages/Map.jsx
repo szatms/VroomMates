@@ -4,6 +4,7 @@ import '../assets/style/map.css';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { request } from '../utils/api';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -44,39 +45,61 @@ export default function Map() {
     const [dest, setDest] = useState({ text: "", pos: null });
     const [comment, setComment] = useState("");
 
-    // --- VÁLTOZÁS: Külön dátum és külön idő state ---
-    const [tripDate, setTripDate] = useState(""); // Pl: "2025-02-01"
-    const [tripTime, setTripTime] = useState(""); // Pl: "09:00"
+    // Autocomplete states
+    const [originSuggestions, setOriginSuggestions] = useState([]);
+    const [destSuggestions, setDestSuggestions] = useState([]);
+
+    const [tripDate, setTripDate] = useState("");
+    const [tripTime, setTripTime] = useState("");
 
     const [routePath, setRoutePath] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]);
+    const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]); // Debrecen
     const [zoom, setZoom] = useState(13);
 
-    const geocode = async (searchText, type) => {
-        if (!searchText) return;
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${searchText}`);
-            const data = await response.json();
-            if (data && data.length > 0) {
-                const lat = parseFloat(data[0].lat);
-                const lon = parseFloat(data[0].lon);
-
-                if (type === 'origin') {
-                    setOrigin(prev => ({ ...prev, pos: [lat, lon] }));
-                    setMapCenter([lat, lon]);
-                } else {
-                    setDest(prev => ({ ...prev, pos: [lat, lon] }));
-                }
+    // --- AUTOCOMPLETE LOGIKA ---
+    // Debounce: Csak akkor keres, ha a felhasználó megállt a gépelésben (500ms)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (origin.text && !origin.pos) { // Csak ha még nincs kiválasztva koordináta
+                fetchSuggestions(origin.text, setOriginSuggestions);
             }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [origin.text]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (dest.text && !dest.pos) {
+                fetchSuggestions(dest.text, setDestSuggestions);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [dest.text]);
+
+    const fetchSuggestions = async (query, setSuggestions) => {
+        if (query.length < 3) return; // Túl rövid keresésnél ne induljon el
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&addressdetails=1&limit=5`);
+            const data = await response.json();
+            setSuggestions(data);
         } catch (error) {
-            console.error("Nem sikerült megtalálni a címet:", error);
+            console.error("Hiba a címkeresésnél:", error);
         }
     };
 
-    const handleSearch = (e, type) => {
-        if (e.key === 'Enter' || e.type === 'blur') {
-            geocode(type === 'origin' ? origin.text : dest.text, type);
+    const selectSuggestion = (item, type) => {
+        const lat = parseFloat(item.lat);
+        const lon = parseFloat(item.lon);
+        const displayName = item.display_name;
+
+        if (type === 'origin') {
+            setOrigin({ text: displayName, pos: [lat, lon] });
+            setOriginSuggestions([]); // Lista elrejtése
+            setMapCenter([lat, lon]); // Térkép odaugrik
+        } else {
+            setDest({ text: displayName, pos: [lat, lon] });
+            setDestSuggestions([]);
         }
     };
 
@@ -84,82 +107,81 @@ export default function Map() {
         setOrigin({ text: "", pos: null });
         setDest({ text: "", pos: null });
         setComment("");
-        // Mindkét mezőt töröljük
         setTripDate("");
         setTripTime("");
         setRoutePath([]);
+        setOriginSuggestions([]);
+        setDestSuggestions([]);
     };
 
     const handleCreateTrip = async () => {
+        // --- 1. VALIDÁCIÓ ---
         if (!origin.pos || !dest.pos) {
-            alert("Kérlek adj meg érvényes indulási és érkezési pontot!");
+            alert("Kérlek válassz kezdő- és végpontot a listából vagy a térképről!");
+            return;
+        }
+        if (!tripDate || !tripTime) {
+            alert("Kérlek add meg a dátumot és az időpontot!");
             return;
         }
 
-        // Ellenőrizzük mindkét mezőt
-        if (!tripDate || !tripTime) {
-            alert("Kérlek add meg a dátumot és az időpontot is!");
+        // Idő ellenőrzés (ne legyen múltbeli)
+        const selectedDateTime = new Date(`${tripDate}T${tripTime}`);
+        const now = new Date();
+        if (selectedDateTime < now) {
+            alert("Nem hozhatsz létre utat a múltban! Kérlek adj meg jövőbeli időpontot.");
             return;
         }
 
         const ownerID = localStorage.getItem('userId');
-        const userRole = localStorage.getItem('role');
         const token = localStorage.getItem('token');
 
-        if (userRole !== 'DRIVER') {
-            alert("Csak sofőrök hirdethetnek meg utat!");
+        if (!token || !ownerID) {
+            alert("Jelentkezz be az úthirdetéshez!");
             return;
         }
 
         setLoading(true);
-
-        // --- ÖSSZEFŰZÉS ---
-        // tripDate: "2025-02-01"
-        // tripTime: "09:00"
-        // Eredmény: "2025-02-01T09:00:00"
         const finalDateTime = `${tripDate}T${tripTime}:00`;
 
         try {
-            await fetch('http://localhost:5000/api/trip', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    startLat: origin.pos[0],
-                    startLon: origin.pos[1],
-                    destLat: dest.pos[0],
-                    destLon: dest.pos[1],
-                    ownerID: ownerID,
-                    comment: comment,
-                    startTime: finalDateTime // A kész formátumot küldjük
-                })
+            // --- 2. MENTÉS A BACKENDRE ---
+            await request('/trips', 'POST', {
+                driverID: Number(ownerID),
+                startLat: origin.pos[0],
+                startLon: origin.pos[1],
+                endLat: dest.pos[0],
+                endLon: dest.pos[1],
+                tripMessage: comment,
+                departureTime: finalDateTime,
+                isLive: true
             });
-        } catch (error) {
-            console.warn("Backend hiba (de a rajzolást folytatjuk):", error);
-        }
 
-        try {
-            const url = `https://router.project-osrm.org/route/v1/driving/${origin.pos[1]},${origin.pos[0]};${dest.pos[1]},${dest.pos[0]}?overview=full&geometries=geojson`;
-            const response = await fetch(url);
-            const data = await response.json();
+            alert("Sikeres úthirdetés!");
 
-            if (data.code === 'Ok') {
-                const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                setRoutePath(coords);
-            } else {
-                alert("Nem található útvonal.");
+            // --- 3. ÚTVONAL KIRAJZOLÁSA (Csak vizuális) ---
+            try {
+                const url = `https://router.project-osrm.org/route/v1/driving/${origin.pos[1]},${origin.pos[0]};${dest.pos[1]},${dest.pos[0]}?overview=full&geometries=geojson`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.code === 'Ok') {
+                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    setRoutePath(coords);
+                }
+            } catch (routeError) {
+                console.warn("Útvonal rajzolása sikertelen (de a mentés sikerült):", routeError);
+                setRoutePath([origin.pos, dest.pos]); // Fallback: egyenes vonal
             }
+
         } catch (error) {
-            setRoutePath([origin.pos, dest.pos]);
+            console.error("Hiba az út létrehozásakor:", error);
+            alert("❌ Nem sikerült létrehozni az utat. " + (error.message || "Ismeretlen hiba."));
         } finally {
             setLoading(false);
         }
     };
 
-    // Mai nap lekérése stringként (YYYY-MM-DD) a "min" attribútumhoz,
-    // hogy ne lehessen múltbeli dátumot választani.
     const today = new Date().toISOString().split('T')[0];
 
     return (
@@ -170,48 +192,70 @@ export default function Map() {
                     <h2 className="travel-title text-center mb-4">Új Út Hirdetése</h2>
 
                     <div className="travel-form d-flex flex-column gap-3">
-                        <div className="text-center small text-muted mb-2">
-                            Töltsd ki az adatokat és kattints a térképre!
-                        </div>
 
-                        {/* INDULÁS HELYE */}
-                        <div className="input-wrapper">
-                            <label className="small fw-bold text-secondary">Indulás helye:</label>
+                        {/* INDULÁS HELYE (Autocomplete) */}
+                        <div className="input-wrapper input-container">
+                            <label className="small fw-bold text-secondary">
+                                Indulás helye <span className="required-star">*</span>
+                            </label>
                             <input
                                 type="text"
                                 className="form-control map-input"
-                                placeholder="Pl. Debrecen"
+                                placeholder="Pl. Debrecen, Vezér utca..."
                                 value={origin.text}
-                                onChange={(e) => setOrigin({ ...origin, text: e.target.value })}
-                                onKeyDown={(e) => handleSearch(e, 'origin')}
-                                onBlur={(e) => handleSearch(e, 'origin')}
+                                onChange={(e) => {
+                                    setOrigin({ ...origin, text: e.target.value, pos: null }); // pos: null, hogy újra lehessen keresni
+                                }}
                             />
+                            {/* Találati lista */}
+                            {originSuggestions.length > 0 && (
+                                <ul className="suggestions-list">
+                                    {originSuggestions.map((item, index) => (
+                                        <li key={index} className="suggestion-item" onClick={() => selectSuggestion(item, 'origin')}>
+                                            {item.display_name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
 
-                        {/* ÉRKEZÉS HELYE */}
-                        <div className="input-wrapper">
-                            <label className="small fw-bold text-secondary">Érkezés helye:</label>
+                        {/* ÉRKEZÉS HELYE (Autocomplete) */}
+                        <div className="input-wrapper input-container">
+                            <label className="small fw-bold text-secondary">
+                                Érkezés helye <span className="required-star">*</span>
+                            </label>
                             <input
                                 type="text"
                                 className="form-control map-input"
-                                placeholder="Pl. Budapest"
+                                placeholder="Pl. Budapest..."
                                 value={dest.text}
-                                onChange={(e) => setDest({ ...dest, text: e.target.value })}
-                                onKeyDown={(e) => handleSearch(e, 'dest')}
-                                onBlur={(e) => handleSearch(e, 'dest')}
+                                onChange={(e) => {
+                                    setDest({ ...dest, text: e.target.value, pos: null });
+                                }}
                             />
+                            {destSuggestions.length > 0 && (
+                                <ul className="suggestions-list">
+                                    {destSuggestions.map((item, index) => (
+                                        <li key={index} className="suggestion-item" onClick={() => selectSuggestion(item, 'dest')}>
+                                            {item.display_name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
 
-                        {/* --- KÉT KÜLÖN MEZŐ --- */}
+                        {/* DÁTUM ÉS IDŐ */}
                         <div className="row">
                             <div className="col-7">
                                 <div className="input-wrapper">
-                                    <label className="small fw-bold text-secondary">Dátum:</label>
+                                    <label className="small fw-bold text-secondary">
+                                        Dátum <span className="required-star">*</span>
+                                    </label>
                                     <input
                                         type="date"
                                         className="form-control map-input"
                                         value={tripDate}
-                                        min={today} // Nem enged múltbeli dátumot
+                                        min={today}
                                         onChange={(e) => setTripDate(e.target.value)}
                                         required
                                     />
@@ -219,7 +263,9 @@ export default function Map() {
                             </div>
                             <div className="col-5">
                                 <div className="input-wrapper">
-                                    <label className="small fw-bold text-secondary">Idő:</label>
+                                    <label className="small fw-bold text-secondary">
+                                        Idő <span className="required-star">*</span>
+                                    </label>
                                     <input
                                         type="time"
                                         className="form-control map-input"
@@ -233,7 +279,7 @@ export default function Map() {
 
                         {/* KOMMENT */}
                         <div className="input-wrapper">
-                            <label className="small fw-bold text-secondary">Megjegyzés:</label>
+                            <label className="small fw-bold text-secondary">Megjegyzés</label>
                             <textarea
                                 className="form-control map-input"
                                 placeholder="Pl. Csomagok, kisállat..."
@@ -247,7 +293,7 @@ export default function Map() {
                         <button
                             className="btn btn-primary w-100 mt-3 py-2 fw-bold"
                             onClick={handleCreateTrip}
-                            disabled={loading || !origin.pos || !dest.pos}
+                            disabled={loading}
                         >
                             {loading ? "Mentés..." : "Útvonal Létrehozása"}
                         </button>
@@ -265,8 +311,8 @@ export default function Map() {
                         <ChangeView center={mapCenter} zoom={zoom} />
                         <LocationSelector setOrigin={setOrigin} setDest={setDest} originPos={origin.pos} destPos={dest.pos} />
                         <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        {origin.pos && <Marker position={origin.pos}><Popup>Indulás</Popup></Marker>}
-                        {dest.pos && <Marker position={dest.pos}><Popup>Érkezés</Popup></Marker>}
+                        {origin.pos && <Marker position={origin.pos}><Popup>Indulás: {origin.text}</Popup></Marker>}
+                        {dest.pos && <Marker position={dest.pos}><Popup>Érkezés: {dest.text}</Popup></Marker>}
                         {routePath.length > 0 && <Polyline positions={routePath} pathOptions={{ color: 'blue', weight: 5 }} />}
                     </MapContainer>
                 </div>

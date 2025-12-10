@@ -40,4 +40,9 @@ public class VehicleController {
     public void delete(@PathVariable String plate) {
         vehicleService.deleteVehicle(plate);
     }
+
+    @GetMapping("/owner/{ownerId}")
+    public VehicleResponseDTO getVehicleByOwner(@PathVariable int ownerId) {
+        return vehicleService.getVehicleByOwner(ownerId);
+    }
 }

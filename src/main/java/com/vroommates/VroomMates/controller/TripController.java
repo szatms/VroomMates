@@ -57,4 +57,9 @@ public class TripController {
     ) {
         return tripService.searchTrips(startLat, startLon, endLat, endLon);
     }
+
+    @GetMapping("/driver/{driverId}")
+    public List<TripResponseDTO> getDriverTrips(@PathVariable int driverId) {
+        return tripService.getActiveTripsForDriver(driverId);
+    }
 }

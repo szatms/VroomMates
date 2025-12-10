@@ -29,5 +29,7 @@ public class Vehicle {
     private int year;
     private String colour;
     private String fuel;
+    @jakarta.persistence.Lob
+    @jakarta.persistence.Column(columnDefinition = "LONGTEXT")
     private String picture;
 }

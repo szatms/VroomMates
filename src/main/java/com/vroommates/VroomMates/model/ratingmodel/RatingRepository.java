@@ -15,4 +15,5 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
     // Kiszámolja a user átlagát (pl. sofőrként)
     @Query("SELECT AVG(r.score) FROM Rating r WHERE r.ratedUser = :user AND r.isDriverRating = :isDriver")
     Double getAverageRating(@Param("user") User user, @Param("isDriver") boolean isDriver);
+    List<Rating> findTop3ByCommentIsNotNullOrderByCreatedAtDesc();
 }

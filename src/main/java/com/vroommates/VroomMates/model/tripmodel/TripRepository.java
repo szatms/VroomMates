@@ -1,5 +1,6 @@
 package com.vroommates.VroomMates.model.tripmodel;
 
+import com.vroommates.VroomMates.model.usermodel.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -22,4 +23,6 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             double endLatMin, double endLatMax,
             double endLonMin, double endLonMax
     );
+    List<Trip> findAllByDriverAndIsLiveTrueOrderByDepartureTimeAsc(User driver);
+    long countByIsLiveTrue();
 }

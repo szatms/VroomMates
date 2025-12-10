@@ -73,4 +73,13 @@ public class VehicleService {
     public void deleteVehicle(String plate) {
         vehicleRepository.deleteById(plate);
     }
+
+    public VehicleResponseDTO getVehicleByOwner(int ownerId) {
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return vehicleRepository.findFirstByOwner(owner)
+                .map(vehicleMapper::toDTO)
+                .orElse(null);
+    }
 }

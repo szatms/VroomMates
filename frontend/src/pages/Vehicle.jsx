@@ -43,7 +43,20 @@ const Vehicle = () => {
         setVehicleData(prev => ({ ...prev, picture: e.target.files[0] }));
     };
 
-    const handleSubmit = async (e) => {
+    const convertToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => {
+                resolve(fileReader.result);
+            };
+            fileReader.onerror = (error) => {
+                reject(error);
+            };
+        });
+    };
+
+const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setMessage({ type: '', text: '' });
@@ -56,6 +69,18 @@ const Vehicle = () => {
             return;
         }
 
+        let base64Image = null;
+        if (vehicleData.picture) {
+            try {
+                base64Image = await convertToBase64(vehicleData.picture);
+            } catch (error) {
+                console.error("Kép konvertálási hiba:", error);
+                setMessage({ type: 'error', text: 'Hiba a kép feldolgozása közben.' });
+                setLoading(false);
+                return;
+            }
+        }
+
         const jsonData = {
             plate: vehicleData.plate,
             seats: Number(vehicleData.seats),
@@ -65,7 +90,7 @@ const Vehicle = () => {
             colour: vehicleData.colour,
             fuel: vehicleData.fuel,
             ownerID: Number(ownerID),
-            picture: null // jelenleg nem kezeljük a backendben
+            picture: base64Image
         };
 
         try {
