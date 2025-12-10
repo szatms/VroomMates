@@ -39,4 +39,7 @@ public class Trip {
     private double endLon;
 
     private String tripMessage;
+
+    private String startLocation;
+    private String endLocation;
 }

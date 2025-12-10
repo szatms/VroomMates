@@ -35,9 +35,14 @@ public class TripService {
         int remainingSeats = totalSeats - passengerCount;
 
         TripResponseDTO dto = tripMapper.toDTO(trip);
+
         dto.setTotalSeats(totalSeats);
         dto.setPassengerCount(passengerCount);
         dto.setRemainingSeats(remainingSeats);
+
+        dto.setStartLocation(trip.getStartLocation());
+        dto.setEndLocation(trip.getEndLocation());
+
         return dto;
     }
 
@@ -46,13 +51,15 @@ public class TripService {
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
-        // Sofőr autójának automatikus hozzárendelése
         Vehicle vehicle = vehicleRepository.findFirstByOwner(driver)
                 .orElseThrow(() -> new RuntimeException("Driver has no registered vehicle"));
 
         Trip trip = tripMapper.toEntity(dto);
         trip.setDriver(driver);
         trip.setVehicle(vehicle);
+
+        trip.setStartLocation(dto.getStartLocation());
+        trip.setEndLocation(dto.getEndLocation());
 
         Trip saved = tripRepository.save(trip);
         return toTripDTOWithPassengers(saved);

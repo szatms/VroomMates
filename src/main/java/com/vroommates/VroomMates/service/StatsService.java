@@ -35,6 +35,7 @@ public class StatsService {
                 .totalPassengers(userRepository.count())
                 .activeTrips(tripRepository.countByIsLiveTrue())
                 .latestRatings(ratings)
+                .activeTrips(tripRepository.countByIsLiveTrueAndDepartureTimeAfter(java.time.LocalDateTime.now()))
                 .build();
     }
 }

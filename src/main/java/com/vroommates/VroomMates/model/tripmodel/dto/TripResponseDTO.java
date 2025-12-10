@@ -28,4 +28,7 @@ public class TripResponseDTO {
     private double co2;
 
     private String tripMessage;
+    
+    private String startLocation;
+    private String endLocation;
 }
