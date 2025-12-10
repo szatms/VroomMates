@@ -22,7 +22,7 @@ public class Trip {
 
     @ManyToOne
     private User driver;
-    private boolean isLive;
+    private boolean isLive = true;
 
     @ManyToOne
     @JoinColumn(name = "vehicle_plate")
@@ -31,10 +31,12 @@ public class Trip {
     private LocalDateTime departureTime;
 
     //start coordinates
-    private float startLat;
-    private float startLon;
+    private double startLat;
+    private double startLon;
 
     //end coordinates
-    private float endLat;
-    private float endLon;
+    private double endLat;
+    private double endLon;
+
+    private String tripMessage;
 }

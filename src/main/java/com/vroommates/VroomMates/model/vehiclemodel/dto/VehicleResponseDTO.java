@@ -9,7 +9,7 @@ public class VehicleResponseDTO {
     private String plate;
     private int ownerID;
     private int seats;
-    private int make;
+    private String make;
     private String model;
     private int year;
     private String colour;

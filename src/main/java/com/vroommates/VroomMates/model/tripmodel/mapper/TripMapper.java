@@ -10,12 +10,13 @@ public class TripMapper {
 
     public Trip toEntity(TripRequestDTO dto) {
         return Trip.builder()
-                .isLive(dto.isLive())
+                .isLive(true)
                 .departureTime(dto.getDepartureTime())
                 .startLat(dto.getStartLat())
                 .startLon(dto.getStartLon())
                 .endLat(dto.getEndLat())
                 .endLon(dto.getEndLon())
+                .tripMessage(dto.getTripMessage())
                 .build();
     }
 
@@ -30,6 +31,8 @@ public class TripMapper {
                 .startLon(entity.getStartLon())
                 .endLat(entity.getEndLat())
                 .endLon(entity.getEndLon())
+                .tripMessage(entity.getTripMessage()) // ÚJ
                 .build();
     }
 }
+

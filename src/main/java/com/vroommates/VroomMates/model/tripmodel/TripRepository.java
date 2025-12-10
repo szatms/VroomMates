@@ -1,6 +1,25 @@
 package com.vroommates.VroomMates.model.tripmodel;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
 
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+
+    @Query("""
+        SELECT t FROM Trip t
+        WHERE t.isLive = true
+          AND t.departureTime >= CURRENT_TIMESTAMP
+          AND t.startLat BETWEEN :startLatMin AND :startLatMax
+          AND t.startLon BETWEEN :startLonMin AND :startLonMax
+          AND t.endLat BETWEEN :endLatMin AND :endLatMax
+          AND t.endLon BETWEEN :endLonMin AND :endLonMax
+    """)
+    List<Trip> searchByBoundingBox(
+            double startLatMin, double startLatMax,
+            double startLonMin, double startLonMax,
+            double endLatMin, double endLatMax,
+            double endLonMin, double endLonMax
+    );
 }
