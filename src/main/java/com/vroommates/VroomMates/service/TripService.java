@@ -163,7 +163,9 @@ public class TripService {
             throw new RuntimeException("Trip already ended");
         }
 
-        // Distance calculation
+        // =============================
+        // 1) Distance + CO2 calculation
+        // =============================
         double distanceKm = DistanceCalculator.calculateDistance(
                 trip.getStartLat(),
                 trip.getStartLon(),
@@ -173,24 +175,40 @@ public class TripService {
 
         double co2 = distanceKm * 0.12;
 
+        // Trip lezárása
         trip.setLive(false);
         tripRepository.save(trip);
 
+        // =============================
+        // 2) Sofőr stat frissítés
+        // =============================
         User driver = trip.getDriver();
-
-        double newDistance = driver.getDistance() + distanceKm;
-        double newCo2 = driver.getCo2() + co2;
-
-        driver.setDistance(newDistance);
-        driver.setCo2(newCo2);
+        driver.setDistance(driver.getDistance() + distanceKm);
+        driver.setCo2(driver.getCo2() + co2);
         userRepository.save(driver);
 
+        // =============================
+        // 3) Utasok stat frissítés
+        // =============================
+        var passengers = bookingRepository.findByTripAndStatus(trip, BookingStatus.JOINED);
+
+        passengers.forEach(booking -> {
+            User passenger = booking.getUser();
+            passenger.setDistance(passenger.getDistance() + distanceKm);
+            passenger.setCo2(passenger.getCo2() + co2);
+            userRepository.save(passenger);
+        });
+
+        // =============================
+        // 4) DTO válasz
+        // =============================
         TripResponseDTO dto = toTripDTOWithPassengers(trip);
         dto.setDistance(distanceKm);
         dto.setCo2(co2);
 
         return dto;
     }
+
 
     public List<TripResponseDTO> getActiveTripsForDriver(int driverId) {
         User driver = userRepository.findById(driverId)

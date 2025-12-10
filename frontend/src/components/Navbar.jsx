@@ -89,7 +89,7 @@ const Navbar = () => {
                             <>
                                 <li className="nav-item border-bottom mb-1">
                                     <span className="nav-link text-dark fw-bold">
-                                        Szia, {userData?.name}!
+                                        Szia, {localStorage.getItem('userName')}!
                                     </span>
                                 </li>
 
@@ -101,7 +101,7 @@ const Navbar = () => {
 
                                 <li className="nav-item">
                                     <a className="nav-link text-dark" href="/user/vehicle">
-                                        Járműveim
+                                        Járművem
                                     </a>
                                 </li>
 
