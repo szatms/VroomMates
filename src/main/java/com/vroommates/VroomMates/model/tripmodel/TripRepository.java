@@ -24,4 +24,5 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             double endLonMin, double endLonMax
     );
     List<Trip> findAllByDriverAndIsLiveTrueOrderByDepartureTimeAsc(User driver);
+    long countByIsLiveTrue();
 }
