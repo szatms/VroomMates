@@ -37,7 +37,6 @@ public class UserService {
 
         User user = userMapper.fromCreateDTO(dto, hashed);
 
-        // 🔥 SZEREPKÖRÖK HELYES BEÁLLÍTÁSA 🔥
         user.setIsDriver(dto.isDriver());
         user.setIsAdmin(dto.isAdmin());
         userRepository.save(user);

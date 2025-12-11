@@ -14,7 +14,14 @@ public class TripResponseDTO {
     private String driverName;
     private String driverPfp;
 
+    private Double driverRating;
+
     private String vehiclePlate;
+    private String vehicleMake;
+    private String vehicleModel;
+
+    private String vehiclePicture;
+
     private boolean isLive;
 
     private LocalDateTime departureTime;

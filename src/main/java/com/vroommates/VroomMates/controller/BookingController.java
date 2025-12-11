@@ -41,4 +41,9 @@ public class BookingController {
         return bookingService.getPassengersForTrip(tripId);
     }
 
+    @GetMapping("/user/{userId}")
+    public List<BookingResponseDTO> getUserBookings(@PathVariable int userId) {
+        return bookingService.getBookingsByUser(userId);
+    }
+
 }

@@ -4,6 +4,7 @@ import com.vroommates.VroomMates.model.bookingmodel.Booking;
 import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
 import com.vroommates.VroomMates.model.bookingmodel.dto.PassengerResponseDTO;
+import com.vroommates.VroomMates.model.ratingmodel.RatingRepository;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.tripmodel.dto.TripRequestDTO;
@@ -29,6 +30,7 @@ public class TripService {
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
     private final BookingRepository bookingRepository;
+    private final RatingRepository ratingRepository;
     private final TripMapper tripMapper;
 
     private TripResponseDTO toTripDTOWithPassengers(Trip trip) {
@@ -54,8 +56,15 @@ public class TripService {
 
         dto.setDriverName(trip.getDriver().getDisplayName() != null ? trip.getDriver().getDisplayName() : trip.getDriver().getUserName());
         dto.setDriverPfp(trip.getDriver().getPfp());
-        dto.setPassengers(passengerDTOs);
 
+        Double rating = ratingRepository.getAverageRating(trip.getDriver(), true);
+        dto.setDriverRating(rating);
+
+        dto.setVehicleMake(trip.getVehicle().getMake());
+        dto.setVehicleModel(trip.getVehicle().getModel());
+        dto.setVehiclePicture(trip.getVehicle().getPicture());
+
+        dto.setPassengers(passengerDTOs);
         dto.setTotalSeats(totalSeats);
         dto.setPassengerCount(passengerCount);
         dto.setRemainingSeats(remainingSeats);
@@ -73,7 +82,6 @@ public class TripService {
     }
 
     public TripResponseDTO createTrip(TripRequestDTO dto) {
-
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
@@ -83,7 +91,6 @@ public class TripService {
         Trip trip = tripMapper.toEntity(dto);
         trip.setDriver(driver);
         trip.setVehicle(vehicle);
-
         trip.setStartLocation(dto.getStartLocation());
         trip.setEndLocation(dto.getEndLocation());
 
@@ -104,28 +111,17 @@ public class TripService {
                 .toList();
     }
 
-    // =========================
-    // TRIP UPDATE
-    // =========================
     public TripResponseDTO updateTrip(int id, TripRequestDTO dto) {
-
         Trip existing = tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
-
         User driver = userRepository.findById(dto.getDriverID())
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
-
-        // Sofőr aktuális autójának lekérése
         Vehicle vehicle = vehicleRepository.findFirstByOwner(driver)
                 .orElseThrow(() -> new RuntimeException("Driver has no registered vehicle"));
 
         existing.setDriver(driver);
         existing.setVehicle(vehicle);
-
-        if (dto.getIsLive() != null) {
-            existing.setLive(dto.getIsLive());
-        }
-
+        if (dto.getIsLive() != null) existing.setLive(dto.getIsLive());
         existing.setDepartureTime(dto.getDepartureTime());
         existing.setStartLat(dto.getStartLat());
         existing.setStartLon(dto.getStartLon());
@@ -137,87 +133,43 @@ public class TripService {
         return toTripDTOWithPassengers(updated);
     }
 
-    public void deleteTrip(int id) {
-        tripRepository.deleteById(id);
-    }
+    public void deleteTrip(int id) { tripRepository.deleteById(id); }
 
-    // =========================
-    // TRIP SEARCH (10 km-es körzet)
-    // =========================
-    public List<TripResponseDTO> searchTrips(double startLat, double startLon,
-                                             double endLat, double endLon) {
-
-        double delta = 0.1; // kb. ±11 km bounding box
-
-        // 1) Előszűrés DB-ben
+    public List<TripResponseDTO> searchTrips(double startLat, double startLon, double endLat, double endLon) {
+        double delta = 0.1;
         List<Trip> raw = tripRepository.searchByBoundingBox(
                 startLat - delta, startLat + delta,
                 startLon - delta, startLon + delta,
                 endLat - delta, endLat + delta,
                 endLon - delta, endLon + delta
         );
-
-        // 2) Valós távolságvizsgálat (10 km-en belül)
         return raw.stream()
                 .filter(t -> {
-                    double startDist = DistanceCalculator.haversine(
-                            startLat, startLon,
-                            t.getStartLat(), t.getStartLon()
-                    );
-
-                    double endDist = DistanceCalculator.haversine(
-                            endLat, endLon,
-                            t.getEndLat(), t.getEndLon()
-                    );
-
+                    double startDist = DistanceCalculator.haversine(startLat, startLon, t.getStartLat(), t.getStartLon());
+                    double endDist = DistanceCalculator.haversine(endLat, endLon, t.getEndLat(), t.getEndLon());
                     return startDist <= 10 && endDist <= 10;
                 })
                 .map(this::toTripDTOWithPassengers)
                 .toList();
     }
 
-    // =========================
-    // TRIP CLOSING + DISTANCE + CO2
-    // =========================
-
     public TripResponseDTO endTrip(int tripId) {
-
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
+        if (!trip.isLive()) throw new RuntimeException("Trip already ended");
 
-        if (!trip.isLive()) {
-            throw new RuntimeException("Trip already ended");
-        }
-
-        // =============================
-        // 1) Distance + CO2 calculation
-        // =============================
-        double distanceKm = DistanceCalculator.calculateDistance(
-                trip.getStartLat(),
-                trip.getStartLon(),
-                trip.getEndLat(),
-                trip.getEndLon()
-        );
-
+        double distanceKm = DistanceCalculator.calculateDistance(trip.getStartLat(), trip.getStartLon(), trip.getEndLat(), trip.getEndLon());
         double co2 = distanceKm * 0.12;
 
-        // Trip lezárása
         trip.setLive(false);
         tripRepository.save(trip);
 
-        // =============================
-        // 2) Sofőr stat frissítés
-        // =============================
         User driver = trip.getDriver();
         driver.setDistance(driver.getDistance() + distanceKm);
         driver.setCo2(driver.getCo2() + co2);
         userRepository.save(driver);
 
-        // =============================
-        // 3) Utasok stat frissítés
-        // =============================
         var passengers = bookingRepository.findByTripAndStatus(trip, BookingStatus.JOINED);
-
         passengers.forEach(booking -> {
             User passenger = booking.getUser();
             passenger.setDistance(passenger.getDistance() + distanceKm);
@@ -225,20 +177,15 @@ public class TripService {
             userRepository.save(passenger);
         });
 
-        // =============================
-        // 4) DTO válasz
-        // =============================
         TripResponseDTO dto = toTripDTOWithPassengers(trip);
         dto.setDistance(distanceKm);
         dto.setCo2(co2);
-
         return dto;
     }
 
     public List<TripResponseDTO> getActiveTripsForDriver(int driverId) {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
-
         return tripRepository.findAllByDriverAndIsLiveTrueOrderByDepartureTimeAsc(driver)
                 .stream()
                 .map(this::toTripDTOWithPassengers)
@@ -246,25 +193,12 @@ public class TripService {
     }
 
     public List<TripResponseDTO> getTripsForUser(int userId) {
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        List<Trip> driverTrips = tripRepository.findAll().stream().filter(t -> t.getDriver().equals(user)).toList();
+        List<Booking> passengerBookings = bookingRepository.findByUserAndStatus(user, BookingStatus.JOINED);
+        List<Trip> passengerTrips = passengerBookings.stream().map(Booking::getTrip).toList();
 
-        // 1) Trip-ek, ahol ő a sofőr
-        List<Trip> driverTrips = tripRepository.findAll()
-                .stream()
-                .filter(t -> t.getDriver().equals(user))
-                .toList();
-
-        // 2) Trip-ek, ahol utasként vett részt (JOINED státusz)
-        List<Booking> passengerBookings =
-                bookingRepository.findByUserAndStatus(user, BookingStatus.JOINED);
-
-        List<Trip> passengerTrips = passengerBookings.stream()
-                .map(Booking::getTrip)
-                .toList();
-
-        // 3) ÖSSZEFŰZÉS + duplikációszűrés + rendezés, MÉG Trip szinten
         return Stream.concat(driverTrips.stream(), passengerTrips.stream())
                 .distinct()
                 .sorted(Comparator.comparing(Trip::getDepartureTime).reversed())

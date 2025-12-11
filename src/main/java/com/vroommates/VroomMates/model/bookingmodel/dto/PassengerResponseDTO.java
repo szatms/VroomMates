@@ -13,4 +13,6 @@ public class PassengerResponseDTO {
     private BookingStatus status;
     private long bookingID;
     private String pfp;
+    private Double rating;
+    private int completedTrips;
 }

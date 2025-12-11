@@ -31,7 +31,6 @@ export default function Login() {
                     localStorage.removeItem("userPfp");
                 }
 
-                // 🔥 MÓDOSÍTÁS: Irány a Home Page!
                 navigate("/");
             }
         } catch (error) {

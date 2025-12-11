@@ -37,7 +37,6 @@ export default function Registration() {
         };
 
         try {
-            // 🔥 MÓDOSÍTÁS: Elmentjük a választ, mert ebben benne van a token!
             const data = await request("/auth/register", "POST", payload);
 
             // Automatikus bejelentkeztetés
@@ -47,7 +46,6 @@ export default function Registration() {
                 localStorage.setItem("userName", data.user.userName);
                 localStorage.setItem("role", data.user.role);
 
-                // Profilkép mentése (backend már beállítja az alapértelmezettet)
                 if (data.user.pfp) {
                     localStorage.setItem("userPfp", data.user.pfp);
                 }
@@ -55,7 +53,6 @@ export default function Registration() {
 
             setMessage("Sikeres regisztráció! Belépés...");
 
-            // 🔥 MÓDOSÍTÁS: Gyors átirányítás a Home-ra (0.8 mp)
             setTimeout(() => {
                 navigate("/");
             }, 800);
