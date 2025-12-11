@@ -7,7 +7,7 @@ const Navbar = () => {
     const [userData, setUserData] = useState(null);
     const [userRole, setUserRole] = useState(null);
     const [nextTrip, setNextTrip] = useState(null);
-    const [userPfp, setUserPfp] = useState(null); // Profilkép state
+    const [userPfp, setUserPfp] = useState(null);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -16,7 +16,7 @@ const Navbar = () => {
         const token = localStorage.getItem('token');
         const userId = localStorage.getItem('userId');
         const role = localStorage.getItem('role');
-        const savedPfp = localStorage.getItem('userPfp'); // Kép betöltése localStorage-ból
+        const savedPfp = localStorage.getItem('userPfp');
 
         if (token) {
             setIsLoggedIn(true);
@@ -64,7 +64,7 @@ const Navbar = () => {
     };
 
     const handleLogout = () => {
-        localStorage.clear(); // Ez törli a tokent, userPfp-t, mindent
+        localStorage.clear();
         setIsLoggedIn(false);
         setUserData(null);
         setUserRole(null);
@@ -82,7 +82,7 @@ const Navbar = () => {
                     <img src="/images/logo.jpeg" alt="Logo"/>
                 </a>
 
-                {/* --- DINAMIKUS ÚT KIJELZŐ --- */}
+                {/* --- DINAMIKUS ÚT SÁV --- */}
                 {isLoggedIn && nextTrip && (
                     <div
                         className="d-flex align-items-center ms-auto me-3 p-2 rounded cursor-pointer"
@@ -125,7 +125,7 @@ const Navbar = () => {
                             <a className="nav-link active" href="/map">Térkép</a>
                         </li>
 
-                        {/* Sofőr menüpontok */}
+                        {/* Sofőr menük */}
                         {userRole === "DRIVER" && (
                             <>
                                 <li className="nav-item">
@@ -141,7 +141,7 @@ const Navbar = () => {
                             </>
                         )}
 
-                        {/* Utas menüpontok */}
+                        {/* Utas menü */}
                         {userRole === "PASSENGER" && (
                              <li className="nav-item">
                                 <a className="nav-link text-primary fw-bold" href="/passengerbooking">
@@ -149,14 +149,35 @@ const Navbar = () => {
                                 </a>
                             </li>
                         )}
+
+                        {isLoggedIn && (
+                            <>
+                                <li className="nav-item border-top mt-2 pt-2 d-lg-none">
+                                    <a className="nav-link text-white" href="/user/profile">
+                                        <i className="bi bi-person-circle me-2"></i>Profilom
+                                    </a>
+                                </li>
+                                <li className="nav-item d-lg-none">
+                                    <a className="nav-link text-white" href="/settings">
+                                        <i className="bi bi-gear-fill me-2"></i>Beállítások
+                                    </a>
+                                </li>
+                                <li className="nav-item d-lg-none">
+                                    <button className="nav-link btn btn-link text-danger text-start w-100" onClick={handleLogout}>
+                                        <i className="bi bi-box-arrow-right me-2"></i>Kijelentkezés
+                                    </button>
+                                </li>
+                            </>
+                        )}
                     </ul>
 
+                    {/* 🔥 DESKTOP NÉZET (d-none d-lg-flex): Dropdown menü */}
                     <div className="d-flex align-items-center d-none d-lg-flex">
                         {isLoggedIn ? (
                             <div className="dropdown">
                                 <button className="btn btn-outline-dark dropdown-toggle fw-bold border-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
                                     <img
-                                        src={userPfp}
+                                        src={userPfp || "/images/avatar-placeholder.png"}
                                         alt="Pfp"
                                         className="rounded-circle border border-secondary"
                                         style={{width: '35px', height: '35px', objectFit: 'cover'}}
@@ -165,7 +186,7 @@ const Navbar = () => {
                                 </button>
                                 <ul className="dropdown-menu dropdown-menu-end">
                                     <li><a className="dropdown-item" href="/user/profile">Profilom</a></li>
-                                    <li><a className="dropdown-item" href="/user/vehicle">Járművem</a></li>
+                                    {/* 🔥 TÖRÖLVE: Járművem menüpont */}
                                     <li><a className="dropdown-item" href="/settings">Beállítások</a></li>
                                     <li><hr className="dropdown-divider"/></li>
                                     <li><button className="dropdown-item text-danger" onClick={handleLogout}>Kijelentkezés</button></li>

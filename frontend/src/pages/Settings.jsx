@@ -4,6 +4,13 @@ import { request } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 
+// A "szokásos" sötétzöld gradiens
+const gradientStyle = {
+    background: "linear-gradient(135deg, #145b32 0%, #198754 100%)",
+    color: "#fff",
+    border: "none"
+};
+
 export default function Settings() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -25,7 +32,6 @@ export default function Settings() {
         fetchData();
     }, []);
 
-    // Kép konvertáló
     const convertToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const fileReader = new FileReader();
@@ -35,7 +41,6 @@ export default function Settings() {
         });
     };
 
-    // Fájl feltöltés
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -44,12 +49,8 @@ export default function Settings() {
             const base64 = await convertToBase64(file);
             const userId = localStorage.getItem('userId');
 
-            // Backend hívás
-            const updatedUser = await request(`/users/${userId}`, "PUT", {
-                pfp: base64
-            });
+            const updatedUser = await request(`/users/${userId}`, "PUT", { pfp: base64 });
 
-            // State és LocalStorage frissítése
             setUser(updatedUser);
             localStorage.setItem('userPfp', base64);
 
@@ -58,28 +59,20 @@ export default function Settings() {
 
         } catch (error) {
             console.error("Hiba a képfeltöltéskor:", error);
-            alert("Sikertelen feltöltés! (Ellenőrizd, hogy az adatbázisban a mező LONGTEXT típusú-e)");
+            alert("Sikertelen feltöltés!");
         }
     };
 
     const handleDriverStatusChange = async (targetIsDriver) => {
         const newRole = targetIsDriver ? 'DRIVER' : 'PASSENGER';
-
-        setUser(prev => ({
-            ...prev,
-            isDriver: targetIsDriver,
-            role: newRole
-        }));
+        setUser(prev => ({ ...prev, isDriver: targetIsDriver, role: newRole }));
         localStorage.setItem('role', newRole);
 
         const userId = user?.id || localStorage.getItem('userId');
         if (!userId) return;
 
         try {
-            const updatedUser = await request(`/users/${userId}`, "PUT", {
-                isDriver: targetIsDriver,
-                driver: targetIsDriver
-            });
+            const updatedUser = await request(`/users/${userId}`, "PUT", { isDriver: targetIsDriver, driver: targetIsDriver });
             const finalIsDriver = (updatedUser.driver !== undefined) ? updatedUser.driver : updatedUser.isDriver;
             setUser({ ...updatedUser, isDriver: finalIsDriver });
         } catch (error) {
@@ -93,7 +86,7 @@ export default function Settings() {
         navigate('/login');
     };
 
-    if (loading) return <div className="settings-loading">Loading...</div>;
+    if (loading) return <div className="settings-loading text-white">Betöltés...</div>;
 
     const userData = user || {};
 
@@ -101,31 +94,42 @@ export default function Settings() {
         <>
             <Navbar />
             <div className="settings-page">
-                <div className="settings-container">
-                    <header className="settings-header">
-                        <div className="header-left"><i className="bi bi-gear-fill" style={{ fontSize: '3rem' }}></i></div>
-                        <h1 className="header-title">BEÁLLÍTÁSOK</h1>
+                {/* A konténerre ráhúzzuk a gradienst */}
+                <div className="settings-container shadow-lg" style={gradientStyle}>
+
+                    {/* Header átlátszó háttérrel és fehér szöveggel */}
+                    <header className="settings-header bg-transparent border-bottom border-white border-opacity-25">
+                        <div className="header-left text-white"><i className="bi bi-gear-fill" style={{ fontSize: '3rem' }}></i></div>
+                        <h1 className="header-title text-white">BEÁLLÍTÁSOK</h1>
                         <div className="header-buttons">
                             <button className="btn-custom btn-logout" onClick={handleLogout}>KIJELENTKEZÉS</button>
-                            <button className="btn-custom btn-back" onClick={() => navigate(-1)}>VISSZA</button>
+                            <button className="btn-custom btn-back text-dark bg-light border-0" onClick={() => navigate(-1)}>VISSZA</button>
                         </div>
                     </header>
 
                     <div className="settings-body">
-                        {/* --- BAL OLDAL: PROFILE ADATOK --- */}
-                        <div className="column profile-column">
-                            <h2 className="section-title">PROFIL</h2>
+                        {/* --- BAL OLDAL --- */}
+                        <div className="column profile-column bg-transparent border-end border-white border-opacity-10">
+                            <h2 className="section-title text-white border-white border-opacity-25">PROFIL</h2>
                             <div className="info-grid">
-                                <div className="info-row"><span className="label">NÉV</span><span className="value">{userData.displayName || "User"}</span></div>
-                                <div className="info-row"><span className="label">FELHASZNÁLÓNÉV</span><span className="value">{userData.userName || "-"}</span></div>
-                                <div className="info-row"><span className="label">EMAIL</span><span className="value">{userData.email || "-"}</span></div>
-
-                                {/* AUTÓ ÉS RENDSZÁM SOROK TÖRÖLVE INNEN */}
+                                {/* A címkék (label) halványabb fehérek, az értékek (value) vastag fehérek */}
+                                <div className="info-row border-white border-opacity-10">
+                                    <span className="label text-white-50">NÉV</span>
+                                    <span className="value text-white">{userData.displayName || "User"}</span>
+                                </div>
+                                <div className="info-row border-white border-opacity-10">
+                                    <span className="label text-white-50">FELHASZNÁLÓNÉV</span>
+                                    <span className="value text-white">{userData.userName || "-"}</span>
+                                </div>
+                                <div className="info-row border-white border-opacity-10">
+                                    <span className="label text-white-50">EMAIL</span>
+                                    <span className="value text-white">{userData.email || "-"}</span>
+                                </div>
 
                                 <div className="radio-section mt-4 mb-4">
                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <span className="label">AKTÍV SOFŐR</span>
-                                        <div className="radio-options">
+                                        <span className="label text-white-50 fw-bold">AKTÍV SOFŐR</span>
+                                        <div className="radio-options text-white">
                                             <label className="me-3" style={{ cursor: 'pointer' }}>
                                                 <input
                                                     type="radio"
@@ -133,7 +137,7 @@ export default function Settings() {
                                                     checked={userData.isDriver === true}
                                                     onChange={() => handleDriverStatusChange(true)}
                                                     className="me-1"
-                                                    style={{ cursor: 'pointer' }}
+                                                    style={{ accentColor: '#ffc107', cursor: 'pointer' }}
                                                 />
                                                 IGEN
                                             </label>
@@ -144,7 +148,7 @@ export default function Settings() {
                                                     checked={userData.isDriver !== true}
                                                     onChange={() => handleDriverStatusChange(false)}
                                                     className="me-1"
-                                                    style={{ cursor: 'pointer' }}
+                                                    style={{ accentColor: '#ffc107', cursor: 'pointer' }}
                                                 />
                                                 NEM
                                             </label>
@@ -156,46 +160,42 @@ export default function Settings() {
                                     <div className="position-relative d-inline-block">
                                         <img
                                             src={userData.pfp}
-                                            className="circle-img"
+                                            className="circle-img border border-3 border-white shadow"
                                             alt="Pfp"
                                             onClick={() => fileInputRef.current.click()}
-                                            style={{cursor: 'pointer', width: '150px', height: '150px'}}
+                                            style={{cursor: 'pointer', width: '150px', height: '150px', objectFit: 'cover'}}
                                             title="Kattints a módosításhoz"
                                         />
 
-                                        {/* Kis ceruza ikon */}
                                         <div
-                                            className="position-absolute bg-white rounded-circle shadow d-flex justify-content-center align-items-center"
+                                            className="position-absolute bg-warning rounded-circle shadow d-flex justify-content-center align-items-center"
                                             style={{width: '35px', height: '35px', bottom: '5px', right: '10px', cursor: 'pointer'}}
                                             onClick={() => fileInputRef.current.click()}
                                         >
                                             <i className="bi bi-pencil-fill text-dark" style={{fontSize: '1rem'}}></i>
                                         </div>
 
-                                        {/* Rejtett input */}
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            style={{display: 'none'}}
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                        />
+                                        <input type="file" ref={fileInputRef} style={{display: 'none'}} accept="image/*" onChange={handleFileChange} />
                                     </div>
-                                    {/* MÁSODIK KARIKA (Autó kép) TÖRÖLVE */}
                                 </div>
                             </div>
                         </div>
 
                         {/* --- JOBB OLDAL --- */}
-                        <div className="column other-column">
-                            <h2 className="section-title">EGYÉB</h2>
+                        <div className="column other-column bg-transparent">
+                            <h2 className="section-title text-white border-white border-opacity-25">EGYÉB</h2>
                             <div className="settings-list">
-                                <div className="setting-item"><span className="label">ÉRTESÍTÉSEK</span><button className="btn-toggle on">BE</button></div>
-                                <div className="setting-item"><span className="label">JELSZÓ MÓDOSÍTÁSA</span><button className="btn-action">MÓDOSÍTÁS</button></div>
-                                <div className="setting-item"><span className="label">TÉMA</span><button className="btn-action">SÖTÉT</button></div>
-                                <div className="mt-5 footer-area">
-                                    <div className="d-flex justify-content-between"><span>VERZIÓ</span><span>1.0.0</span></div>
-                                    <div className="d-flex justify-content-between mt-3 text-danger fw-bold"><span>FIÓK TÖRLÉSE</span><button className="btn btn-danger btn-sm">TÖRLÉS</button></div>
+                                <div className="setting-item border-white border-opacity-10">
+                                    <span className="label text-white-50">JELSZÓ MÓDOSÍTÁSA</span>
+                                    <button className="btn-action text-white border-white hover-bg-white hover-text-dark">MÓDOSÍTÁS</button>
+                                </div>
+
+                                <div className="mt-5 footer-area border-top border-white border-opacity-25 pt-3">
+                                    <div className="d-flex justify-content-between text-white-50"><span>VERZIÓ</span><span>1.0.0</span></div>
+                                    <div className="d-flex justify-content-between mt-3 text-warning fw-bold">
+                                        <span>FIÓK TÖRLÉSE</span>
+                                        <button className="btn btn-outline-danger btn-sm text-white border-white">TÖRLÉS</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -3,6 +3,7 @@ package com.vroommates.VroomMates.service;
 import com.vroommates.VroomMates.model.bookingmodel.Booking;
 import com.vroommates.VroomMates.model.bookingmodel.BookingRepository;
 import com.vroommates.VroomMates.model.bookingmodel.BookingStatus;
+import com.vroommates.VroomMates.model.bookingmodel.dto.PassengerResponseDTO;
 import com.vroommates.VroomMates.model.tripmodel.Trip;
 import com.vroommates.VroomMates.model.tripmodel.TripRepository;
 import com.vroommates.VroomMates.model.tripmodel.dto.TripRequestDTO;
@@ -33,11 +34,27 @@ public class TripService {
     private TripResponseDTO toTripDTOWithPassengers(Trip trip) {
 
         int totalSeats = trip.getVehicle().getSeats();
-        int activePassengers = bookingRepository.countByTripAndStatus(trip, BookingStatus.JOINED);
-        int passengerCount = activePassengers + 1;   // sofőr is számít!
+
+        List<Booking> activeBookings = bookingRepository.findByTripAndStatus(trip, BookingStatus.JOINED);
+
+        int activePassengers = activeBookings.size();
+        int passengerCount = activePassengers + 1;
         int remainingSeats = totalSeats - passengerCount;
 
+        List<PassengerResponseDTO> passengerDTOs = activeBookings.stream()
+                .map(b -> PassengerResponseDTO.builder()
+                        .userID(b.getUser().getUserId())
+                        .name(b.getUser().getDisplayName() != null ? b.getUser().getDisplayName() : b.getUser().getUserName())
+                        .pfp(b.getUser().getPfp())
+                        .status(b.getStatus())
+                        .build())
+                .toList();
+
         TripResponseDTO dto = tripMapper.toDTO(trip);
+
+        dto.setDriverName(trip.getDriver().getDisplayName() != null ? trip.getDriver().getDisplayName() : trip.getDriver().getUserName());
+        dto.setDriverPfp(trip.getDriver().getPfp());
+        dto.setPassengers(passengerDTOs);
 
         dto.setTotalSeats(totalSeats);
         dto.setPassengerCount(passengerCount);
@@ -45,6 +62,12 @@ public class TripService {
 
         dto.setStartLocation(trip.getStartLocation());
         dto.setEndLocation(trip.getEndLocation());
+
+        if (!trip.isLive() && dto.getDistance() == 0) {
+            double dist = DistanceCalculator.haversine(trip.getStartLat(), trip.getStartLon(), trip.getEndLat(), trip.getEndLon());
+            dto.setDistance(dist);
+            dto.setCo2(dist * 0.12);
+        }
 
         return dto;
     }

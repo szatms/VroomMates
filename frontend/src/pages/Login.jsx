@@ -31,7 +31,8 @@ export default function Login() {
                     localStorage.removeItem("userPfp");
                 }
 
-                navigate("/user/profile");
+                // 🔥 MÓDOSÍTÁS: Irány a Home Page!
+                navigate("/");
             }
         } catch (error) {
             setMessage("Hibás e-mail cím vagy jelszó!");
@@ -45,48 +46,34 @@ export default function Login() {
                 <div className="login-box p-4">
                     <div className="text-center mb-5">
                         <div className="logo-container mx-auto mb-3">
-                            <img src="/images/vroommates-logo.png" alt="VroomMates Logo" className="vroommates-logo"/>
+                            <img src="/images/logo.jpeg" alt="VroomMates Logo" className="vroommates-logo"/>
                         </div>
                         <h1 className="app-title">VroomMates</h1>
-                        <p className="sign-in-text">Sign into your account</p>
-                        <p className="create-account-link">Or create a new one <a href="/register">here</a></p>
+                        <p className="sign-in-text">Jelentkezz be a fiókodba</p>
+                        <p className="create-account-link">Vagy hozz létre egy újat <a href="/register">itt</a></p>
                     </div>
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
                             <div className="input-group login-input-group">
                                 <span className="input-group-text"><i className="fas fa-envelope"></i></span>
-                                <input
-                                    type="email"
-                                    className="form-control"
-                                    placeholder="E-mail address"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
+                                <input type="email" className="form-control" placeholder="E-mail cím" value={email} onChange={(e) => setEmail(e.target.value)} required />
                             </div>
                         </div>
 
                         <div className="mb-3">
                             <div className="input-group login-input-group">
                                 <span className="input-group-text"><i className="fas fa-lock"></i></span>
-                                <input
-                                    type="password"
-                                    className="form-control"
-                                    placeholder="Password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
+                                <input type="password" className="form-control" placeholder="Jelszó" value={password} onChange={(e) => setPassword(e.target.value)} required />
                             </div>
                         </div>
 
                         <div className="text-end mb-4">
-                            <a href="#" className="forgot-password-link">Forgot your password?</a>
+                            <a href="#" className="forgot-password-link">Elfelejtetted a jelszavad?</a>
                         </div>
 
                         <div className="text-center">
-                            <button type="submit" className="btn login-btn">Login</button>
+                            <button type="submit" className="btn login-btn">Bejelentkezés</button>
                         </div>
                     </form>
 
