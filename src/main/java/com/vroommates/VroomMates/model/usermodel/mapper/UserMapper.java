@@ -26,7 +26,7 @@ public class UserMapper {
                 .passwordHash(passwordHash)
                 .displayName(dto.getDisplayName())
                 .email(dto.getEmail())
-                .pfp(null)
+                .pfp("/images/avatar-placeholder.png")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .distance(0.0)

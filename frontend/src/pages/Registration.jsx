@@ -5,10 +5,9 @@ import '../assets/style/registration.css';
 import { request } from '../utils/api';
 
 export default function Registration() {
-    // JAVÍTÁS 1: A state kulcsai legyenek összhangban az input "name" attribútumaival
     const [formData, setFormData] = useState({
         email: "",
-        username: "", // "userName" helyett "username", hogy passzoljon az input name-hez
+        username: "",
         displayName: "",
         password: "",
         role: "passenger",
@@ -16,11 +15,8 @@ export default function Registration() {
     const [message, setMessage] = useState("");
     const navigate = useNavigate();
 
-    // JAVÍTÁS 2: Ha a regisztrációs oldalra lépsz, töröljük a beragadt tokent!
     useEffect(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('role');
+        localStorage.clear();
     }, []);
 
     const handleChange = (e) => {
@@ -33,7 +29,7 @@ export default function Registration() {
 
         const payload = {
             email: formData.email,
-            userName: formData.username, // A backend "userName"-t vár, a state-ben most már "username" van
+            userName: formData.username,
             displayName: formData.displayName,
             password: formData.password,
             driver: formData.role === "driver",
@@ -41,10 +37,26 @@ export default function Registration() {
         };
 
         try {
-            // Itt már nem lesz token a fejlécben, mert a useEffect törölte
-            await request("/auth/register", "POST", payload);
-            setMessage("Sikeres regisztráció! Átirányítás...");
-            setTimeout(() => navigate("/login"), 2000);
+            const data = await request("/auth/register", "POST", payload);
+
+            // Automatikus bejelentkeztetés
+            if (data && data.accessToken) {
+                localStorage.setItem("token", data.accessToken);
+                localStorage.setItem("userId", data.user.userId);
+                localStorage.setItem("userName", data.user.userName);
+                localStorage.setItem("role", data.user.role);
+
+                if (data.user.pfp) {
+                    localStorage.setItem("userPfp", data.user.pfp);
+                }
+            }
+
+            setMessage("Sikeres regisztráció! Belépés...");
+
+            setTimeout(() => {
+                navigate("/");
+            }, 800);
+
         } catch (error) {
             setMessage("Hiba: " + error.message);
         }
@@ -60,96 +72,54 @@ export default function Registration() {
                             <img src="/images/logo.jpeg" alt="VroomMates Logo" className="vroommates-logo"/>
                         </div>
                         <h1 className="app-title">VroomMates</h1>
-                        <p className="create-account-text">Create your account</p>
+                        <p className="create-account-text">Hozd létre a fiókodat</p>
                     </div>
 
                     <form onSubmit={handleSubmit}>
-                        {/* 1. SOR: Email és Username */}
                         <div className="row mb-3">
                             <div className="col-md-6 mb-3 mb-md-0">
                                 <div className="input-group registration-input-group">
                                     <span className="input-group-text"><i className="fas fa-envelope"></i></span>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        className="form-control"
-                                        placeholder="E-mail address"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <input type="email" name="email" className="form-control" placeholder="E-mail cím" value={formData.email} onChange={handleChange} required />
                                 </div>
                             </div>
                             <div className="col-md-6">
                                 <div className="input-group registration-input-group">
                                     <span className="input-group-text"><i className="fas fa-user"></i></span>
-                                    {/* JAVÍTÁS: name="username" egyezzen a state kulcsával */}
-                                    <input
-                                        type="text"
-                                        name="username"
-                                        className="form-control"
-                                        placeholder="Username"
-                                        value={formData.username}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <input type="text" name="username" className="form-control" placeholder="Felhasználónév" value={formData.username} onChange={handleChange} required />
                                 </div>
                             </div>
                         </div>
 
-                        {/* 2. SOR: Display Name és Role */}
                         <div className="row mb-3">
                             <div className="col-md-6 mb-3 mb-md-0">
                                 <div className="input-group registration-input-group">
                                     <span className="input-group-text"><i className="fas fa-id-card"></i></span>
-                                    <input
-                                        type="text"
-                                        name="displayName"
-                                        className="form-control"
-                                        placeholder="Display Name"
-                                        value={formData.displayName}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <input type="text" name="displayName" className="form-control" placeholder="Megjelenítendő név" value={formData.displayName} onChange={handleChange} required />
                                 </div>
                             </div>
                             <div className="col-md-6">
                                 <div className="input-group registration-input-group">
                                     <span className="input-group-text"><i className="fas fa-car-side"></i></span>
-                                    <select
-                                        name="role"
-                                        className="form-select"
-                                        value={formData.role}
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="passenger">Passenger</option>
-                                        <option value="driver">Driver</option>
+                                    <select name="role" className="form-select" value={formData.role} onChange={handleChange} required>
+                                        <option value="passenger">Utas</option>
+                                        <option value="driver">Sofőr</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
 
-                        {/* 3. SOR: Jelszó */}
                         <div className="row mb-5">
                             <div className="col-12">
                                 <div className="input-group registration-input-group">
                                     <span className="input-group-text"><i className="fas fa-lock"></i></span>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        className="form-control"
-                                        placeholder="Password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <input type="password" name="password" className="form-control" placeholder="Jelszó" value={formData.password} onChange={handleChange} required />
                                 </div>
                             </div>
                         </div>
 
                         <div className="text-center">
-                            <button type="submit" className="btn register-btn">Register</button>
+                            <button type="submit" className="btn register-btn">Regisztráció</button>
                         </div>
                     </form>
 

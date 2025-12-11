@@ -1,104 +1,83 @@
 import React, { useState } from 'react';
-import '../assets/style/rating.css'; // A CSS importálása
-import Navbar from '../components/Navbar.jsx'; // Ha szeretnéd, hogy itt is legyen navbar
+import '../assets/style/rating.css';
+import Navbar from '../components/Navbar.jsx';
+
+const gradientStyle = {
+    background: "linear-gradient(135deg, #145b32 0%, #198754 100%)",
+    color: "#fff",
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+};
 
 const RateDriver = () => {
-    // Állapot a kiválasztott csillagoknak (rating) és az épp egérrel érintett csillagnak (hover)
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    // Backend hívás a gomb megnyomásakor
     const submitRating = async () => {
-        if (rating === 0) {
-            alert("Kérlek válassz legalább 1 csillagot!");
-            return;
-        }
-
+        if (rating === 0) return alert("Kérlek válassz legalább 1 csillagot!");
         setLoading(true);
         const token = localStorage.getItem('token');
-
-        // Itt feltételezem, hogy az URL-ből vagy localStorage-ból tudod, kit értékelünk.
-        // Példa: az utolsó sofőr ID-ja el van mentve, vagy URL paraméterként jön.
         const driverId = localStorage.getItem('lastDriverId') || 1;
 
         try {
-            const response = await fetch('http://localhost:5000/api/rate', {
+            const response = await fetch('/api/ratings', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    driverId: driverId,
-                    score: rating, // A csillagok száma (1-5)
-                    comment: "Felhasználói értékelés" // Opcionális
-                })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ tripId: 1, ratedUserId: driverId, score: rating, comment: "User rating" })
             });
-
             if (response.ok) {
                 alert("Köszönjük az értékelést!");
-                window.location.href = '/map'; // Visszairányítás a térképre
-            } else {
-                alert("Hiba történt az értékelés küldésekor.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Nem sikerült elérni a szervert.");
-        } finally {
-            setLoading(false);
-        }
+                window.location.href = '/map';
+            } else alert("Hiba történt.");
+        } catch (error) { alert("Nem sikerült elérni a szervert."); }
+        finally { setLoading(false); }
     };
 
     return (
         <>
         <Navbar />
-        <div className="rating-container">
+        <div style={gradientStyle}>
+            <div className="card shadow-lg border-0 p-4 text-center" style={{maxWidth: '400px', width: '90%', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)'}}>
 
-
-            <div className="rating-card">
-                {/* Profilkép */}
-                <div className="profile-wrapper">
+                <div className="mx-auto mb-3" style={{width: '100px', height: '100px'}}>
                     <img
                         src="/images/driver-placeholder-1.jpg"
-                        alt="Bing"
-                        className="profile-img"
+                        alt="Driver"
+                        className="rounded-circle border border-3 border-white shadow"
+                        style={{width: '100%', height: '100%', objectFit: 'cover'}}
                     />
                 </div>
-                <p className="driver-name">Bing</p>
 
-                <h2 className="rating-title">Rate your driver:</h2>
+                <h4 className="fw-bold mb-0 text-white">Bing</h4>
+                <div className="badge bg-warning text-dark mb-4 mt-2 px-3 py-1">SOFŐR</div>
 
-                {/* Csillagok */}
-                <div className="stars-wrapper">
-                    {[...Array(5)].map((star, index) => {
-                        index += 1; // Hogy 1-től induljon a számozás
+                <h5 className="mb-3 opacity-75 text-white">Hogy sikerült az út?</h5>
+
+                <div className="d-flex justify-content-center gap-2 mb-4">
+                    {[...Array(5)].map((_, index) => {
+                        const starVal = index + 1;
                         return (
-                            <button
-                                type="button"
-                                key={index}
-                                className={index <= (hover || rating) ? "star-btn on" : "star-btn off"}
-                                onClick={() => setRating(index)}
-                                onMouseEnter={() => setHover(index)}
-                                onMouseLeave={() => setHover(rating)}
-                            >
-                                <span className="star">&#9733;</span>
-                            </button>
+                            <i
+                                key={starVal}
+                                className={`bi bi-star-fill fs-2 cursor-pointer ${starVal <= (hover || rating) ? 'text-warning' : 'text-white-50'}`}
+                                style={{transition: 'transform 0.2s', transform: starVal === hover ? 'scale(1.2)' : 'scale(1)', cursor: 'pointer'}}
+                                onClick={() => setRating(starVal)}
+                                onMouseEnter={() => setHover(starVal)}
+                                onMouseLeave={() => setHover(0)} // Hover reset
+                            ></i>
                         );
                     })}
                 </div>
 
-                <p className="rating-value-text">
-                    {rating > 0 ? `${rating} csillag` : "Értékelj!"}
+                <p className="mb-4 fw-bold text-warning" style={{height: '24px'}}>
+                    {rating > 0 ? `${rating} csillag` : "Értékeld!"}
                 </p>
 
-                {/* Küldés Gomb */}
-                <button
-                    className="submit-rating-btn"
-                    onClick={submitRating}
-                    disabled={loading}
-                >
-                    {loading ? "Küldés..." : "Értékelés Elküldése"}
+                <button className="btn btn-light w-100 rounded-pill fw-bold text-success py-2 shadow" onClick={submitRating} disabled={loading}>
+                    {loading ? "Küldés..." : "ÉRTÉKELÉS ELKÜLDÉSE"}
                 </button>
             </div>
         </div>

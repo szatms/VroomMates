@@ -4,8 +4,6 @@ import Navbar from '../components/Navbar.jsx';
 import '../assets/style/homepage.css';
 import { request } from '../utils/api';
 
-// ... (Stílus és komponensek maradnak a régiek) ...
-// --- STÍLUS KONSTANS ---
 const gradientStyle = {
     background: "linear-gradient(135deg, #145b32 0%, #198754 100%)",
     color: "#fff",
@@ -110,9 +108,9 @@ export default function HomePage() {
 
                 const tripsData = await request('/trips');
                 if (tripsData && tripsData.length > 0) {
-                    // Csak azokat mutatjuk, amik MÉG nem lettek manuálisan lezárva (isLive=true)
+                    // Csak az aktív és jövőbeli utakat mutatjuk
                     const activeTrips = tripsData
-                        .filter(t => (t.live === true || t.isLive === true))
+                        .filter(t => (t.live || t.isLive) && new Date(t.departureTime) > new Date())
                         .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
 
                     setFeaturedTrips(activeTrips);
@@ -127,6 +125,21 @@ export default function HomePage() {
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         navigate('/map', { state: { searchParams: searchParams, activeTab: 'search' } });
+    };
+
+    const handleJoinTrip = async (tripId) => {
+        const userId = localStorage.getItem('userId');
+        const role = localStorage.getItem('role');
+
+        if (!userId) return alert("Jelentkezéshez lépj be!");
+        if (role === 'DRIVER') return alert("Sofőrként nem jelentkezhetsz!");
+
+        try {
+            await request('/bookings/join', 'POST', { tripID: tripId, userID: Number(userId) });
+            alert("Jelentkezés elküldve! Értesítünk, ha a sofőr elfogadta.");
+        } catch (error) {
+            alert("Hiba: " + error.message);
+        }
     };
 
     return (
@@ -163,7 +176,7 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    {/* JOBB OLDAL: CAROUSEL (JAVÍTOTT CÍMKE) */}
+                    {/* JOBB OLDAL: CAROUSEL */}
                     <div className="col-lg-6 col-md-12">
                         <div id="driverCarousel" className="carousel slide shadow h-100" data-bs-ride="carousel" style={gradientStyle}>
                             {featuredTrips.length > 1 && (
@@ -181,50 +194,49 @@ export default function HomePage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    featuredTrips.map((trip, index) => {
-                                        // JAVÍTÁS: Időbeli ellenőrzés a címkéhez
-                                        const isOngoing = new Date() > new Date(trip.departureTime);
-                                        const labelText = isOngoing ? "JELENLEG ZAJLIK" : "KÖVETKEZŐ JÁRAT";
-                                        const labelClass = isOngoing ? "text-warning" : "text-white-50";
+                                    featuredTrips.map((trip, index) => (
+                                        <div key={trip.tripID} className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`}>
+                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4 text-white">
 
-                                        return (
-                                            <div key={trip.tripID} className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`}>
-                                                <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-4 text-white">
+                                                <small className="text-uppercase fw-bold mb-3 text-warning" style={{letterSpacing: "2px"}}>
+                                                    KÖVETKEZŐ JÁRAT
+                                                </small>
 
-                                                    {/* DINAMIKUS CÍMKE */}
-                                                    <small className={`text-uppercase fw-bold mb-3 ${labelClass}`} style={{letterSpacing: "2px"}}>
-                                                        {labelText}
-                                                    </small>
-
-                                                    <div className="text-center mb-2">
-                                                        <h3 className="fw-bold mb-0 text-white">{getCity(trip.startLocation)}</h3>
-                                                        <small className="d-block text-white-50">{getDetails(trip.startLocation)}</small>
-                                                    </div>
-
-                                                    <i className="fas fa-arrow-down text-white my-2"></i>
-
-                                                    <div className="text-center mb-3">
-                                                        <h3 className="fw-bold mb-0 text-white">{getCity(trip.endLocation)}</h3>
-                                                        <small className="d-block text-white-50">{getDetails(trip.endLocation)}</small>
-                                                    </div>
-
-                                                    <div className="mt-2 fw-bold text-warning">
-                                                        {new Date(trip.departureTime).toLocaleDateString()} | {new Date(trip.departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                                                    </div>
-                                                    <div className="mt-3 badge bg-white text-dark p-2">
-                                                        {trip.remainingSeats} szabad hely
-                                                    </div>
+                                                <div className="text-center mb-2">
+                                                    <h3 className="fw-bold mb-0 text-white">{getCity(trip.startLocation)}</h3>
+                                                    <small className="d-block text-white-50">{getDetails(trip.startLocation)}</small>
                                                 </div>
+
+                                                <i className="fas fa-arrow-down text-white my-2"></i>
+
+                                                <div className="text-center mb-3">
+                                                    <h3 className="fw-bold mb-0 text-white">{getCity(trip.endLocation)}</h3>
+                                                    <small className="d-block text-white-50">{getDetails(trip.endLocation)}</small>
+                                                </div>
+
+                                                <div className="mt-2 fw-bold text-warning">
+                                                    {new Date(trip.departureTime).toLocaleDateString()} | {new Date(trip.departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                </div>
+                                                <div className="mt-2 badge bg-white text-dark p-2 mb-3">
+                                                    {trip.remainingSeats} szabad hely
+                                                </div>
+
+                                                <button
+                                                    className="btn btn-light rounded-pill px-4 fw-bold text-success shadow hover-scale"
+                                                    onClick={() => handleJoinTrip(trip.tripID)}
+                                                >
+                                                    JELENTKEZÉS
+                                                </button>
                                             </div>
-                                        );
-                                    })
+                                        </div>
+                                    ))
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-               {/* --- STATISZTIKA --- */}
+               {/* --- STATISZTIKA (VISSZAKERÜLT!) --- */}
                <h4 className="px-3 mb-3 text-white">Statisztika</h4>
                <div className="row g-4 px-3 mb-5">
                    <div className="col-md-4">
@@ -256,7 +268,7 @@ export default function HomePage() {
                    </div>
                </div>
 
-                {/* --- VÉLEMÉNYEK --- */}
+                {/* --- VÉLEMÉNYEK (VISSZAKERÜLT!) --- */}
                 <h4 className="px-3 mb-3 text-white">Legutóbbi Vélemények</h4>
                 <div className="row g-4 px-3">
                     {stats.latestRatings.length === 0 ? (

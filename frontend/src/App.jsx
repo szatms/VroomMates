@@ -9,11 +9,16 @@ import PassengerRating from "./pages/RatePassenger.jsx";
 import Vehicle from "./pages/Vehicle.jsx";
 import DriverDashboard from "./pages/DriverDashboard.jsx";
 import Settings from './pages/Settings';
+import PasserBooking from './pages/PassengerBooking.jsx';
+import DriverBooking from './pages/DriverBooking.jsx';
+
 
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
+                <Route path="/driverbooking" element={<DriverBooking />} />
+                <Route path="/passengerbooking" element={<PasserBooking />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/ratedriver" element={<RateDriver />} />
                 <Route path="/ratepassenger" element={<PassengerRating />} />

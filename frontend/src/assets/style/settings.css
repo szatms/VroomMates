@@ -1,135 +1,223 @@
+/* src/assets/style/settings.css */
+
+/* --- HÁTTÉR ÉS ALAPOK --- */
 .settings-page {
-    background-color: #5bbd56; /* Zöld háttér */
-    min-height: 100vh;
-    padding: 20px;
-    padding-top: 40px; /* Hely a Navbar alatt */
+    min-height: 90vh; /* Navbar alatti terület */
+    padding: 40px 20px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #1a1a1a;
+    color: #333;
 }
 
+.settings-loading {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.5rem;
+    color: #666;
+}
+
+/* --- FŐ KÁRTYA KONTÉNER --- */
 .settings-container {
-    background-color: #5bbd56;
-    border: 3px solid #1a1a1a;
-    max-width: 1200px;
+    background-color: #ffffff; /* Fehér kártya */
+    max-width: 1000px;
     margin: 0 auto;
-    box-shadow: 10px 10px 0px #1a1a1a; /* Retro árnyék */
+    border-radius: 12px; /* Lekerekített sarkok */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Modern, lágy árnyék */
+    overflow: hidden;
 }
 
-/* HEADER */
+/* --- HEADER --- */
 .settings-header {
-    background-color: #6bc966;
-    border-bottom: 3px solid #1a1a1a;
-    padding: 20px 30px;
+    background-color: #fff;
+    border-bottom: 1px solid #eee; /* Finom elválasztó */
+    padding: 25px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
+.header-left {
+    color: #4aa84a; /* Zöld ikon */
+}
+
 .header-title {
-    font-size: 3rem;
-    font-weight: 400;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
     margin: 0;
-    letter-spacing: 2px;
+    letter-spacing: normal;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* Fejléc gombok */
 .btn-custom {
-    background: #2c2c2c;
-    color: white;
     border: none;
-    padding: 10px 25px;
-    margin-left: 10px;
-    font-weight: bold;
-    text-transform: uppercase;
+    padding: 8px 20px;
+    font-weight: 600;
+    border-radius: 20px; /* Lekerekített gomb */
     cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-size: 0.9rem;
 }
 
-.btn-custom:hover {
-    background-color: #000;
+.btn-logout {
+    background-color: #dc3545; /* Piros a Logoutnak */
+    color: white;
+}
+.btn-logout:hover {
+    background-color: #c82333;
 }
 
-/* TEST (Body) */
+.btn-back {
+    background-color: #6c757d; /* Szürke a Visszához */
+    color: white;
+}
+.btn-back:hover {
+    background-color: #5a6268;
+}
+
+/* --- TARTALOM (BODY) --- */
 .settings-body {
     display: flex;
     flex-wrap: wrap;
-    min-height: 600px;
+    min-height: 500px;
 }
 
+/* Oszlopok */
 .column {
     flex: 1;
     padding: 40px;
-    min-width: 350px;
+    min-width: 320px;
 }
 
+/* Profil oszlop (bal oldal) */
 .profile-column {
-    border-right: 3px solid #1a1a1a;
+    border-right: 1px solid #eee; /* Finom szürke vonal */
+    background-color: #fafafa; /* Kicsit eltérő háttér */
 }
 
-/* Mobilon a vonal alulra kerül */
+/* Mobilon a vonal */
 @media(max-width: 992px){
     .profile-column {
         border-right: none;
-        border-bottom: 3px solid #1a1a1a;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
     }
 }
 
 .section-title {
-    font-size: 2rem;
-    text-align: center;
-    margin-bottom: 30px;
-    font-weight: 400;
+    font-size: 1.4rem;
+    text-align: left;
+    margin-bottom: 25px;
+    font-weight: 600;
+    color: #4aa84a; /* Zöld cím */
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+    display: inline-block;
 }
 
-/* ADAT SOROK */
+/* --- ADAT SOROK --- */
 .info-row, .setting-item {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Ha a cím hosszú, ne csússzon el */
-    margin-bottom: 18px;
-    font-size: 1.05rem;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0; /* Halvány sor elválasztó */
+    font-size: 0.95rem;
+}
+
+.info-row:last-child, .setting-item:last-child {
+    border-bottom: none;
 }
 
 .label {
     font-weight: 600;
+    color: #6c757d; /* Szürke címke */
+    font-size: 0.85rem;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .value {
     font-weight: 600;
+    color: #333;
     text-align: right;
 }
 
-/* RADIO GOMBOK */
-.radio-options label {
-    font-weight: 600;
-    cursor: default;
+/* --- RADIO GOMBOK --- */
+.radio-options {
+    display: flex;
+    gap: 15px;
 }
 
-/* KÉPEK */
+/* A rádió gomb pötty színének testreszabása */
+input[type="radio"] {
+    accent-color: #4aa84a; /* Zöld */
+    transform: scale(1.2);
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+/* --- KÉPEK --- */
+.profile-images {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
 .circle-img {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #333;
-    background-color: #ccc;
+    border: 4px solid #fff; /* Fehér keret */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); /* Árnyék */
+    background-color: #e9ecef;
 }
 
-/* GOMBOK JOBB OLDALT */
+/* --- EGYÉB GOMBOK --- */
 .btn-action {
-    background: #333;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 5px 15px;
+    background: transparent;
+    color: #4aa84a;
+    border: 1px solid #4aa84a;
+    border-radius: 20px;
+    padding: 4px 15px;
     cursor: pointer;
-    min-width: 90px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background: #4aa84a;
+    color: white;
 }
 
 .btn-toggle {
     border-radius: 20px;
-    padding: 5px 20px;
-    border: none;
-    font-weight: bold;
+    padding: 4px 15px;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    color: #666;
+    font-weight: 500;
     cursor: pointer;
+    font-size: 0.85rem;
 }
-.btn-toggle.on { background: white; color: black; }
+
+.btn-toggle.on {
+    background-color: #4aa84a; /* Zöld */
+    color: white;
+    border-color: #4aa84a;
+}
+
+/* Footer terület */
+.footer-area {
+    margin-top: 50px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}

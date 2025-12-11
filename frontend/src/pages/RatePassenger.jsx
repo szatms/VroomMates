@@ -2,105 +2,82 @@ import React, { useState } from 'react';
 import '../assets/style/rating.css';
 import Navbar from '../components/Navbar.jsx';
 
+const gradientStyle = {
+    background: "linear-gradient(135deg, #145b32 0%, #198754 100%)",
+    color: "#fff",
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+};
+
 const RatePassenger = () => {
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [loading, setLoading] = useState(false);
 
     const submitRating = async () => {
-        if (rating === 0) {
-            alert("Kérlek válassz legalább 1 csillagot!");
-            return;
-        }
-
+        if (rating === 0) return alert("Kérlek válassz legalább 1 csillagot!");
         setLoading(true);
         const token = localStorage.getItem('token');
-
         const passengerId = localStorage.getItem('currentPassengerId') || 1;
 
         try {
-            // A végpontot igazítsd a backendhez (pl. /api/rate/passenger)
-            const response = await fetch('/ratings', {
+            const response = await fetch('/api/ratings', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    targetUserId: passengerId, // Akit értékelünk
-                    score: rating,
-                    comment: "Utas értékelése"
-                })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ tripId: 1, ratedUserId: passengerId, score: rating, comment: "Passenger rating" })
             });
-
             if (response.ok) {
                 alert("Köszönjük az értékelést!");
-                window.location.href = '/'; // Visszairányítás a főoldalra
-            } else {
-                alert("Hiba történt az értékelés küldésekor.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Nem sikerült elérni a szervert.");
-        } finally {
-            setLoading(false);
-        }
+                window.location.href = '/';
+            } else alert("Hiba történt.");
+        } catch (error) { alert("Nem sikerült elérni a szervert."); }
+        finally { setLoading(false); }
     };
 
     return (
-
        <>
        <Navbar />
-        <div className="rating-container">
+        <div style={gradientStyle}>
+            <div className="card shadow-lg border-0 p-4 text-center" style={{maxWidth: '400px', width: '90%', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)'}}>
 
-
-            <div className="rating-card">
-                {/* Profilkép */}
-                <div className="profile-wrapper">
-                    {/* Itt egy utas placeholder képét érdemes használni */}
+                <div className="mx-auto mb-3" style={{width: '100px', height: '100px'}}>
                     <img
-                        src="/images/passenger-placeholder.jpg"
+                        src="/images/avatar-placeholder.png"
                         alt="Utas"
-                        className="profile-img"
+                        className="rounded-circle border border-3 border-white shadow"
+                        style={{width: '100%', height: '100%', objectFit: 'cover'}}
                     />
                 </div>
 
-                {/* Utas neve */}
-                <p className="driver-name">Utas Neve</p>
+                <h4 className="fw-bold mb-0 text-white">Utas Neve</h4>
+                <div className="badge bg-info text-dark mb-4 mt-2 px-3 py-1">UTAS</div>
 
-                {/* SZÖVEG VÁLTOZÁS */}
-                <h2 className="rating-title">Értékeld az utast:</h2>
+                <h5 className="mb-3 opacity-75 text-white">Milyen volt az utas?</h5>
 
-                {/* Csillagok (Ugyanaz a logika) */}
-                <div className="stars-wrapper">
-                    {[...Array(5)].map((star, index) => {
-                        index += 1;
+                <div className="d-flex justify-content-center gap-2 mb-4">
+                    {[...Array(5)].map((_, index) => {
+                        const starVal = index + 1;
                         return (
-                            <button
-                                type="button"
-                                key={index}
-                                className={index <= (hover || rating) ? "star-btn on" : "star-btn off"}
-                                onClick={() => setRating(index)}
-                                onMouseEnter={() => setHover(index)}
-                                onMouseLeave={() => setHover(rating)}
-                            >
-                                <span className="star">&#9733;</span>
-                            </button>
+                            <i
+                                key={starVal}
+                                className={`bi bi-star-fill fs-2 cursor-pointer ${starVal <= (hover || rating) ? 'text-warning' : 'text-white-50'}`}
+                                style={{transition: 'transform 0.2s', transform: starVal === hover ? 'scale(1.2)' : 'scale(1)', cursor: 'pointer'}}
+                                onClick={() => setRating(starVal)}
+                                onMouseEnter={() => setHover(starVal)}
+                                onMouseLeave={() => setHover(0)}
+                            ></i>
                         );
                     })}
                 </div>
 
-                <p className="rating-value-text">
-                    {rating > 0 ? `${rating} csillag` : "Milyen volt az utas?"}
+                <p className="mb-4 fw-bold text-warning" style={{height: '24px'}}>
+                    {rating > 0 ? `${rating} csillag` : "Értékeld!"}
                 </p>
 
-                {/* Gomb */}
-                <button
-                    className="submit-rating-btn"
-                    onClick={submitRating}
-                    disabled={loading}
-                >
-                    {loading ? "Küldés..." : "Értékelés Elküldése"}
+                <button className="btn btn-light w-100 rounded-pill fw-bold text-success py-2 shadow" onClick={submitRating} disabled={loading}>
+                    {loading ? "Küldés..." : "ÉRTÉKELÉS ELKÜLDÉSE"}
                 </button>
             </div>
         </div>

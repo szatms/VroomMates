@@ -1,0 +1,119 @@
+/* src/assets/style/myBookings.css */
+
+.bookings-page-container {
+    min-height: 90vh; /* Halvány szürke háttér */
+    padding: 40px 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.bookings-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.page-title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-weight: 700;
+}
+
+/* Lista rács elrendezés */
+.booking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Kártya stílus */
+.booking-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 5px solid #ccc; /* Alapértelmezett szegély */
+}
+
+.booking-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* Header rész */
+.booking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.trip-id {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Státusz címkék */
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.status-badge.accepted {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Adatok megjelenítése */
+.booking-body {
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.info-row .label {
+    color: #6c757d;
+}
+
+.info-row .value {
+    color: #333;
+    font-weight: 500;
+}
+
+/* Gombok */
+.booking-footer {
+    text-align: right;
+}
+
+/* Reszponzivitás: Táblagép és asztali gép esetén rács */
+@media (min-width: 768px) {
+    .booking-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* Két oszlop */
+    }
+}
