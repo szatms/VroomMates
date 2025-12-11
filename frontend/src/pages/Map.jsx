@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import ActiveTripPanel from '../components/ActiveTripPanel.jsx';
 import '../assets/style/map.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { request } from '../utils/api';
@@ -46,14 +46,12 @@ export default function Map() {
     const location = useLocation();
     const [mode, setMode] = useState('driver');
 
-    // Keresési state-ek
     const [origin, setOrigin] = useState({ text: "", pos: null });
     const [dest, setDest] = useState({ text: "", pos: null });
     const [comment, setComment] = useState("");
     const [originSuggestions, setOriginSuggestions] = useState([]);
     const [destSuggestions, setDestSuggestions] = useState([]);
 
-    // Dátum és idő state-ek
     const [tripDate, setTripDate] = useState(new Date().toISOString().split('T')[0]);
     const [tripTime, setTripTime] = useState("12:00");
     const [searchTimeStart, setSearchTimeStart] = useState("00:00");
@@ -64,27 +62,51 @@ export default function Map() {
     const [mapCenter, setMapCenter] = useState([47.5316, 21.6273]);
     const [zoom, setZoom] = useState(13);
 
-    // --- ÚJ STATE: AKTÍV UTAZÁS ---
     const [activeTripData, setActiveTripData] = useState(null);
 
-    // --- 1. AUTOMATIKUS AKTÍV ÚT DETEKTÁLÁS ---
     useEffect(() => {
-        const checkActiveTrip = async () => {
+        const loadTripContext = async () => {
             const userId = localStorage.getItem('userId');
             const role = localStorage.getItem('role');
+
+            if (location.state?.activeTrip) {
+                const trip = location.state.activeTrip;
+                try {
+                    let passengers = [];
+                    try {
+                        passengers = await request(`/bookings/passengers/${trip.tripID}`);
+                    } catch(err) { console.log("Nincs utaslista info"); }
+
+                    const fullTripData = {
+                        ...trip,
+                        passengers: passengers || [],
+                        driverName: trip.driverName || "Sofőr",
+                        driverPfp: trip.driverPfp || "/images/driver-placeholder-1.jpg",
+                        vehicleModel: "Jármű",
+                        isFinished: false
+                    };
+
+                    setActiveTripData(fullTripData);
+                    setMode(role === 'DRIVER' ? 'driver' : 'passenger');
+                    setMapCenter([trip.startLat, trip.startLon]);
+                    setOrigin({ text: trip.startLocation, pos: [trip.startLat, trip.startLon] });
+                    setDest({ text: trip.endLocation, pos: [trip.endLat, trip.endLon] });
+                    setZoom(10);
+
+                } catch (e) { console.error(e); }
+                return;
+            }
+
             if (!userId) return;
 
-            // Ha SOFŐR
             if (role === 'DRIVER') {
                 try {
                     const trips = await request(`/trips/driver/${userId}`);
                     const now = new Date();
-                    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
                     const currentTrip = trips.find(t => {
                         const isLive = t.live === true || t.isLive === true;
                         const depTime = new Date(t.departureTime);
-                        return isLive && (depTime <= twoHoursLater);
+                        return isLive && (depTime <= now);
                     });
 
                     if (currentTrip) {
@@ -95,10 +117,11 @@ export default function Map() {
                             isFinished: false
                         });
                         setMode('driver');
+                        setOrigin({ text: currentTrip.startLocation, pos: [currentTrip.startLat, currentTrip.startLon] });
+                        setDest({ text: currentTrip.endLocation, pos: [currentTrip.endLat, currentTrip.endLon] });
                     }
                 } catch (e) { console.error(e); }
             }
-            // Ha UTAS
             else if (role === 'USER' || role === 'PASSENGER') {
                 const savedTripId = localStorage.getItem('passengerActiveTripId');
                 if (savedTripId) {
@@ -109,10 +132,12 @@ export default function Map() {
                                 ...trip,
                                 driverName: trip.driverName || "Sofőr " + trip.driverID,
                                 driverPfp: "/images/driver-placeholder-1.jpg",
-                                vehicleModel: "Autó",
+                                vehicleModel: "Jármű",
                                 isFinished: false
                             });
                             setMode('passenger');
+                            setOrigin({ text: trip.startLocation, pos: [trip.startLat, trip.startLon] });
+                            setDest({ text: trip.endLocation, pos: [trip.endLat, trip.endLon] });
                         } else {
                             localStorage.removeItem('passengerActiveTripId');
                         }
@@ -120,45 +145,32 @@ export default function Map() {
                 }
             }
         };
-        checkActiveTrip();
-    }, []);
+        loadTripContext();
+    }, [location.state]);
 
-    // --- 2. ÚJ FUNKCIÓ: AJÁNLOTT UTAK BETÖLTÉSE (TOP 5) ---
     useEffect(() => {
         if (mode === 'passenger' && !activeTripData) {
             const fetchRecommendedTrips = async () => {
                 try {
                     const trips = await request('/trips');
                     if (!trips) return;
-
                     const now = new Date();
-
-                    // Szűrés: Legyen ÉLŐ (isLive) és (Jövőbeli VAGY Nemrég indult)
                     const activeOrUpcoming = trips.filter(t => {
                         const isLive = t.live === true || t.isLive === true;
                         if (!isLive) return false;
-
                         const dep = new Date(t.departureTime);
-                        const isRecent = dep > new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-                        return isRecent;
+                        return dep > new Date(now.getTime() - 24 * 60 * 60 * 1000);
                     });
-
                     activeOrUpcoming.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
-
                     if (!origin.text && !dest.text) {
                         setSearchResults(activeOrUpcoming.slice(0, 5));
                     }
-                } catch (e) {
-                    console.error("Nem sikerült betölteni az ajánlott utakat:", e);
-                }
+                } catch (e) { console.error(e); }
             };
             fetchRecommendedTrips();
         }
     }, [mode, activeTripData]);
 
-
-    // --- 3. AUTOMATIKUS KITÖLTÉS (HomePage navigáció után) ---
     useEffect(() => {
         if (location.state?.searchParams) {
             const { from, to, date, timeStart, timeEnd } = location.state.searchParams;
@@ -225,18 +237,15 @@ export default function Map() {
     const handleReset = () => {
         setOrigin({ text: "", pos: null });
         setDest({ text: "", pos: null });
-        setSearchResults([]); // Ez törli a listát
+        setSearchResults([]);
         setActiveTripData(null);
     };
 
     const handleCreateTrip = async () => {
         if (!origin.pos || !dest.pos) return alert("Add meg a kezdő és végpontot!");
-
         const selectedDateTime = new Date(`${tripDate}T${tripTime}:00`);
         const now = new Date();
-        if (selectedDateTime < now) {
-            return alert("Nem hozhatsz létre utat a múltban! Kérlek ellenőrizd a dátumot és időt.");
-        }
+        if (selectedDateTime < now) return alert("Nem hozhatsz létre utat a múltban!");
 
         const ownerID = localStorage.getItem('userId');
         setLoading(true);
@@ -253,12 +262,10 @@ export default function Map() {
                 departureTime: `${tripDate}T${tripTime}:00`,
                 isLive: true
             });
-
-            alert("Sikeres úthirdetés! Az út megjelent a rendszerben.");
+            alert("Sikeres úthirdetés!");
             handleReset();
-
         } catch (error) {
-            alert("Hiba: " + error.message);
+            alert(error.message);
         } finally {
             setLoading(false);
         }
@@ -275,10 +282,8 @@ export default function Map() {
                 endLon: dest.pos[1]
             });
             const results = await request(`/trips/search?${queryParams.toString()}`, 'GET');
-
             const filteredResults = results.filter(trip => {
                 if (!(trip.live || trip.isLive)) return false;
-
                 const tripDateObj = new Date(trip.departureTime);
                 if (tripDate) {
                     const tDate = tripDateObj.toLocaleDateString('sv-SE');
@@ -287,7 +292,6 @@ export default function Map() {
                 const tTime = tripDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                 return tTime >= searchTimeStart && tTime <= searchTimeEnd;
             });
-
             setSearchResults(filteredResults);
             if (filteredResults.length === 0) alert("Nincs találat.");
         } catch (error) {
@@ -300,25 +304,18 @@ export default function Map() {
     const handleJoinTrip = async (trip) => {
         const userId = localStorage.getItem('userId');
         if (!userId) return alert("Jelentkezz be!");
-
         try {
-            await request('/bookings/join', 'POST', {
-                tripID: trip.tripID,
-                userID: Number(userId)
-            });
-
+            await request('/bookings/join', 'POST', { tripID: trip.tripID, userID: Number(userId) });
             localStorage.setItem('passengerActiveTripId', trip.tripID);
-
             setActiveTripData({
                 ...trip,
                 driverName: trip.driverName || "Sofőr",
                 driverPfp: "/images/driver-placeholder-1.jpg",
-                vehicleModel: "Honda Civic",
+                vehicleModel: "Jármű",
                 isFinished: false
             });
-
         } catch (error) {
-            alert("Hiba: " + error.message);
+            alert(error.message);
         }
     };
 
@@ -379,14 +376,11 @@ export default function Map() {
                                 </>
                             )}
 
-                            {/* TALÁLATOK LISTÁJA (Most már alapból mutatja az ajánlottakat is) */}
                             {mode === 'passenger' && searchResults.length > 0 && (
                                 <div className="search-results mt-2" style={{overflowY: 'auto', maxHeight: '300px'}}>
-                                    {/* Címke a listához, hogy egyértelmű legyen */}
                                     <h6 className="text-center text-white border-bottom pb-2">
-                                        {!origin.pos ? "Ajánlott Járatok (Következő 5)" : "Keresési Találatok"}
+                                        {!origin.text ? "Ajánlott Járatok" : "Találatok"}
                                     </h6>
-
                                     {searchResults.map(trip => (
                                         <div key={trip.tripID} className="card bg-dark text-white mb-2 border-secondary">
                                             <div className="card-body p-2">
@@ -394,9 +388,7 @@ export default function Map() {
                                                     <strong>{new Date(trip.departureTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong>
                                                     <span className="text-warning fw-bold">{trip.remainingSeats} szabad</span>
                                                 </div>
-                                                <div className="small text-truncate" title={trip.startLocation + ' -> ' + trip.endLocation}>
-                                                    {trip.startLocation} &rarr; {trip.endLocation}
-                                                </div>
+                                                <div className="small text-truncate" title={trip.startLocation + ' -> ' + trip.endLocation}>{trip.startLocation} &rarr; {trip.endLocation}</div>
                                                 <div className="small text-white-50 mt-1">Sofőr: {trip.driverName || "..."}</div>
                                                 <button className="btn btn-sm btn-outline-light w-100 mt-2" onClick={() => handleJoinTrip(trip)}>Jelentkezés</button>
                                             </div>
@@ -413,12 +405,19 @@ export default function Map() {
                         <ChangeView center={mapCenter} zoom={zoom} />
                         {!activeTripData && <LocationSelector setOrigin={setOrigin} setDest={setDest} originPos={origin.pos} destPos={dest.pos} />}
                         <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        {origin.pos && <Marker position={origin.pos}><Popup>Start</Popup></Marker>}
-                        {dest.pos && <Marker position={dest.pos}><Popup>Cél</Popup></Marker>}
+
+                        {/* Start és Cél Markerek */}
+                        {origin.pos && <Marker position={origin.pos}><Popup>Indulás</Popup></Marker>}
+                        {dest.pos && <Marker position={dest.pos}><Popup>Érkezés</Popup></Marker>}
+
+                        {/* Útvonal vonal rajzolása (Polyline) */}
+                        {origin.pos && dest.pos && (
+                            <Polyline positions={[origin.pos, dest.pos]} color="blue" weight={5} opacity={0.7} />
+                        )}
 
                         {mode === 'passenger' && searchResults.map(trip => (
                              <Marker key={trip.tripID} position={[trip.startLat, trip.startLon]} opacity={0.7}>
-                                <Popup><b>{trip.driverName}</b><br/><button className="btn btn-sm btn-primary mt-1" onClick={() => handleJoinTrip(trip)}>Go!</button></Popup>
+                                <Popup><b>{trip.driverName}</b><br/><button className="btn btn-sm btn-primary mt-1" onClick={() => handleJoinTrip(trip)}>Jelentkezés</button></Popup>
                             </Marker>
                         ))}
                     </MapContainer>

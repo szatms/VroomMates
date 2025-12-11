@@ -157,4 +157,20 @@ public class BookingService {
                 .toList();
     }
 
+    public List<PassengerResponseDTO> getApplicantsForTrip(int tripID) {
+        Trip trip = tripRepository.findById(tripID)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        List<Booking> bookings = bookingRepository.findAllByTrip(trip);
+
+        return bookings.stream()
+                .map(booking -> PassengerResponseDTO.builder()
+                        .userID(booking.getUser().getUserId())
+                        .name(booking.getUser().getDisplayName() != null ? booking.getUser().getDisplayName() : booking.getUser().getUserName())
+                        .email(booking.getUser().getEmail())
+                        .status(booking.getStatus())
+                        .build())
+                .toList();
+    }
+
 }
