@@ -51,7 +51,7 @@ const Navbar = () => {
                             <a className="nav-link active" href="/map">Térkép</a>
                         </li>
                         <li className="nav-item">
-                            <a className="nav-link" href="/szures">Sofőrök</a>
+                            <a className="nav-link" href="/driver/dashboard">Sofőrök</a>
                         </li>
 
                         {/* 🔥 DINAMIKUS GOMB (Mindkettőnek megjelenik, de máshova visz) */}
@@ -59,12 +59,12 @@ const Navbar = () => {
                             <li className="nav-item">
                                 <a
                                     className={`nav-link fw-bold ${userRole === 'DRIVER' ? 'text-success' : 'text-primary'}`}
-                                    href={userRole === 'DRIVER' ? '/user/vehicle' : '/user/history'}
+                                    href={userRole === 'DRIVER' ? '/driverbooking' : '/passengerbooking'}
                                 >
                                     {/* Ikon és szöveg cseréje szerepkör alapján */}
                                     {userRole === 'DRIVER' ? (
                                         <>
-                                            <i className="bi bi-car-front-fill me-1"></i> Járművem
+                                            <i className="bi bi-car-front-fill me-1"></i> Utazásaim
                                         </>
                                     ) : (
                                         <>
