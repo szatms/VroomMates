@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import '../assets/style/rating.css'; // A CSS importálása
-import Navbar from '../components/Navbar.jsx'; // Ha szeretnéd, hogy itt is legyen navbar
+import '../assets/style/rating.css';
+import Navbar from '../components/Navbar.jsx';
 
 const RateDriver = () => {
-    // Állapot a kiválasztott csillagoknak (rating) és az épp egérrel érintett csillagnak (hover)
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -18,12 +17,10 @@ const RateDriver = () => {
         setLoading(true);
         const token = localStorage.getItem('token');
 
-        // Itt feltételezem, hogy az URL-ből vagy localStorage-ból tudod, kit értékelünk.
-        // Példa: az utolsó sofőr ID-ja el van mentve, vagy URL paraméterként jön.
         const driverId = localStorage.getItem('lastDriverId') || 1;
 
         try {
-            const response = await fetch('http://localhost:5000/api/rate', {
+            const response = await fetch('/api/rate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

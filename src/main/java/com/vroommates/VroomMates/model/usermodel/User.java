@@ -44,7 +44,8 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    @Column(name = "profilp")
+    @Lob
+    @Column(name = "profilp", columnDefinition = "LONGTEXT")
     private String pfp;
 
     @Column(name = "distance")

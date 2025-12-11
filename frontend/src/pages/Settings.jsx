@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import '../assets/style/settings.css';
 import { request } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
@@ -6,30 +6,16 @@ import Navbar from '../components/Navbar.jsx';
 
 export default function Settings() {
     const [user, setUser] = useState(null);
-    const [vehicle, setVehicle] = useState(null);
     const [loading, setLoading] = useState(true);
+    const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
-    // --- 1. Adatok betöltése ---
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // User betöltése
                 const userData = await request("/users/me");
                 setUser(userData);
                 if (userData.role) localStorage.setItem('role', userData.role);
-
-                // Autó betöltése (ha van ID)
-                const currentUserId = userData.id || userData.userId || localStorage.getItem('userId');
-
-                if (currentUserId) {
-                    try {
-                        const vehicleData = await request(`/vehicles/owner/${currentUserId}`);
-                        setVehicle(vehicleData);
-                    } catch (e) {
-                        setVehicle(null);
-                    }
-                }
             } catch (error) {
                 console.error("Hiba az adatok betöltésekor", error);
             } finally {
@@ -39,7 +25,43 @@ export default function Settings() {
         fetchData();
     }, []);
 
-    // --- 2. Státusz váltó logika ---
+    // Kép konvertáló
+    const convertToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => resolve(fileReader.result);
+            fileReader.onerror = (error) => reject(error);
+        });
+    };
+
+    // Fájl feltöltés
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const base64 = await convertToBase64(file);
+            const userId = localStorage.getItem('userId');
+
+            // Backend hívás
+            const updatedUser = await request(`/users/${userId}`, "PUT", {
+                pfp: base64
+            });
+
+            // State és LocalStorage frissítése
+            setUser(updatedUser);
+            localStorage.setItem('userPfp', base64);
+
+            alert("Sikeres feltöltés!");
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Hiba a képfeltöltéskor:", error);
+            alert("Sikertelen feltöltés! (Ellenőrizd, hogy az adatbázisban a mező LONGTEXT típusú-e)");
+        }
+    };
+
     const handleDriverStatusChange = async (targetIsDriver) => {
         const newRole = targetIsDriver ? 'DRIVER' : 'PASSENGER';
 
@@ -58,11 +80,8 @@ export default function Settings() {
                 isDriver: targetIsDriver,
                 driver: targetIsDriver
             });
-
-            // Biztosítjuk, hogy a válasz alapján frissüljön az isDriver
             const finalIsDriver = (updatedUser.driver !== undefined) ? updatedUser.driver : updatedUser.isDriver;
             setUser({ ...updatedUser, isDriver: finalIsDriver });
-
         } catch (error) {
             console.error("Hiba mentéskor:", error);
             setUser(prev => ({ ...prev, isDriver: !targetIsDriver }));
@@ -77,8 +96,6 @@ export default function Settings() {
     if (loading) return <div className="settings-loading">Loading...</div>;
 
     const userData = user || {};
-    // Ha nincs autó adat, üres objektumot használunk
-    const carData = vehicle || {};
 
     return (
         <>
@@ -87,10 +104,10 @@ export default function Settings() {
                 <div className="settings-container">
                     <header className="settings-header">
                         <div className="header-left"><i className="bi bi-gear-fill" style={{ fontSize: '3rem' }}></i></div>
-                        <h1 className="header-title">SETTINGS</h1>
+                        <h1 className="header-title">BEÁLLÍTÁSOK</h1>
                         <div className="header-buttons">
-                            <button className="btn-custom btn-logout" onClick={handleLogout}>LOG OUT</button>
-                            <button className="btn-custom btn-back" onClick={() => navigate(-1)}>BACK</button>
+                            <button className="btn-custom btn-logout" onClick={handleLogout}>KIJELENTKEZÉS</button>
+                            <button className="btn-custom btn-back" onClick={() => navigate(-1)}>VISSZA</button>
                         </div>
                     </header>
 
@@ -101,35 +118,10 @@ export default function Settings() {
                             <div className="info-grid">
                                 <div className="info-row"><span className="label">NÉV</span><span className="value">{userData.displayName || "User"}</span></div>
                                 <div className="info-row"><span className="label">FELHASZNÁLÓNÉV</span><span className="value">{userData.userName || "-"}</span></div>
-                                <div className="info-row"><span className="label">REGISZTRÁCIÓ DÁTUMA</span><span className="value">{userData.birthDate || "-"}</span></div>
+                                <div className="info-row"><span className="label">EMAIL</span><span className="value">{userData.email || "-"}</span></div>
 
-                                {/* --- AUTÓ ADATOK (A JSON alapján) --- */}
-                                <div className="info-row">
-                                    <span className="label">AUTÓ</span>
-                                    <span className="value">
-                                        {carData.make ? `${carData.make} ${carData.model}` : (userData.carType || "-")}
-                                    </span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">ÉVJÁRAT / ÜZEMANYAG</span>
-                                    <span className="value">
-                                        {carData.year ? `${carData.year}, ${carData.fuel}` : "-"}
-                                    </span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">RENDSZÁM</span>
-                                    <span className="value" style={{textTransform: 'uppercase'}}>
-                                        {carData.plate || "-"}
-                                    </span>
-                                </div>
-                                <div className="info-row">
-                                    <span className="label">ÜLÉSEK SZÁMA</span>
-                                    <span className="value text-end">
-                                        {carData.seats || userData.seats || "-"}
-                                    </span>
-                                </div>
+                                {/* AUTÓ ÉS RENDSZÁM SOROK TÖRÖLVE INNEN */}
 
-                                {/* --- RÁDIÓ GOMBOK --- */}
                                 <div className="radio-section mt-4 mb-4">
                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                         <span className="label">AKTÍV SOFŐR</span>
@@ -161,31 +153,49 @@ export default function Settings() {
                                 </div>
 
                                 <div className="profile-images mt-5 text-center">
-                                    <img src={userData.pfp || "/images/avatar-placeholder.png"} className="circle-img me-3" alt="Pfp" />
-
-                                    {/* Csak akkor mutatjuk az autót, ha driver ÉS van autója */}
-                                    {userData.isDriver && (
+                                    <div className="position-relative d-inline-block">
                                         <img
-                                            // A JSON-ben "picture" mezőben jön a base64 string
-                                            src={carData.picture || "/images/car-placeholder.jpg"}
+                                            src={userData.pfp}
                                             className="circle-img"
-                                            alt="Car"
+                                            alt="Pfp"
+                                            onClick={() => fileInputRef.current.click()}
+                                            style={{cursor: 'pointer', width: '150px', height: '150px'}}
+                                            title="Kattints a módosításhoz"
                                         />
-                                    )}
+
+                                        {/* Kis ceruza ikon */}
+                                        <div
+                                            className="position-absolute bg-white rounded-circle shadow d-flex justify-content-center align-items-center"
+                                            style={{width: '35px', height: '35px', bottom: '5px', right: '10px', cursor: 'pointer'}}
+                                            onClick={() => fileInputRef.current.click()}
+                                        >
+                                            <i className="bi bi-pencil-fill text-dark" style={{fontSize: '1rem'}}></i>
+                                        </div>
+
+                                        {/* Rejtett input */}
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            style={{display: 'none'}}
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                        />
+                                    </div>
+                                    {/* MÁSODIK KARIKA (Autó kép) TÖRÖLVE */}
                                 </div>
                             </div>
                         </div>
 
                         {/* --- JOBB OLDAL --- */}
                         <div className="column other-column">
-                            <h2 className="section-title">OTHER</h2>
+                            <h2 className="section-title">EGYÉB</h2>
                             <div className="settings-list">
-                                <div className="setting-item"><span className="label">ÉRTESÍTÉSEK</span><button className="btn-toggle on">ON</button></div>
-                                <div className="setting-item"><span className="label">JELSZÓ MEGVÁLTOZTATÁSA</span><button className="btn-action">CHANGE</button></div>
-                                <div className="setting-item"><span className="label">TÉMA</span><button className="btn-action">DARK</button></div>
+                                <div className="setting-item"><span className="label">ÉRTESÍTÉSEK</span><button className="btn-toggle on">BE</button></div>
+                                <div className="setting-item"><span className="label">JELSZÓ MÓDOSÍTÁSA</span><button className="btn-action">MÓDOSÍTÁS</button></div>
+                                <div className="setting-item"><span className="label">TÉMA</span><button className="btn-action">SÖTÉT</button></div>
                                 <div className="mt-5 footer-area">
-                                    <div className="d-flex justify-content-between"><span>VERZIÓ</span><span>0.0.1</span></div>
-                                    <div className="d-flex justify-content-between mt-3 text-danger fw-bold"><span>FIÓK TÖRLÉSE</span><button className="btn btn-danger btn-sm">DELETE</button></div>
+                                    <div className="d-flex justify-content-between"><span>VERZIÓ</span><span>1.0.0</span></div>
+                                    <div className="d-flex justify-content-between mt-3 text-danger fw-bold"><span>FIÓK TÖRLÉSE</span><button className="btn btn-danger btn-sm">TÖRLÉS</button></div>
                                 </div>
                             </div>
                         </div>

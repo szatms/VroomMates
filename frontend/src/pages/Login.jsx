@@ -15,7 +15,6 @@ export default function Login() {
         setMessage("");
 
         try {
-            // backend UserLoginDTO email-t és jelszót vár
             const data = await request("/auth/login", "POST", {
                 email: email,
                 password: password
@@ -24,7 +23,14 @@ export default function Login() {
                 localStorage.setItem("token", data.accessToken);
                 localStorage.setItem("userId", data.user.userId);
                 localStorage.setItem("userName", data.user.userName);
-                localStorage.setItem("role", data.user.role)
+                localStorage.setItem("role", data.user.role);
+
+                if (data.user.pfp) {
+                    localStorage.setItem("userPfp", data.user.pfp);
+                } else {
+                    localStorage.removeItem("userPfp");
+                }
+
                 navigate("/user/profile");
             }
         } catch (error) {

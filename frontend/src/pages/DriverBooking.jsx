@@ -2,18 +2,23 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar.jsx';
 import '../assets/style/driverbooking.css';
 
-// --- ALKOMPONENS ---
-// Most már vár egy 'rawBookings' propot is, ami a szülőtől jön!
-const TripPassengers = ({ tripId, rawBookings = [] }) => {
+const formatLocation = (fullAddress) => {
+    if (!fullAddress) return { city: "Ismeretlen", addr: "" };
+    const parts = fullAddress.split(',');
+    const city = parts[0].trim();
+    const addr = parts.length > 1 ? parts.slice(1).join(',').trim() : "";
+    return { city, addr };
+};
+
+const TripPassengers = ({ tripId }) => {
     const [passengers, setPassengers] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. Utasok betöltése (Név + Email miatt kell, mert a rawBookings-ban lehet csak ID van)
     useEffect(() => {
-        const fetchPassengers = async () => {
+        const fetchApplicants = async () => {
             const token = localStorage.getItem('token');
             try {
-                const response = await fetch(`http://localhost:5000/api/bookings/passengers/${tripId}`, {
+                const response = await fetch(`/api/bookings/passengers/${tripId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -22,59 +27,38 @@ const TripPassengers = ({ tripId, rawBookings = [] }) => {
                     setPassengers(data);
                 }
             } catch (error) {
-                console.error("Hiba:", error);
+                console.error("Hiba az utasok betöltésekor:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchPassengers();
+        fetchApplicants();
     }, [tripId]);
 
-    // SEGÉDFÜGGVÉNY: Booking ID keresése
-    const findBookingId = (userId) => {
-        // Megnézzük a szülőtől kapott nyers listát
-        // A backendtől függően a mező neve lehet 'user_id', 'userId', vagy 'passengerId'
-        const match = rawBookings.find(b =>
-            b.user_id === userId || b.userId === userId || b.passengerId === userId
-        );
-
-        // Ha megvan, visszaadjuk a bookingid-t (vagy bookingId-t)
-        return match ? (match.bookingid || match.bookingId) : null;
-    };
-
-    // 2. Státusz módosítása
     const handleStatusAction = async (passenger, action) => {
         const token = localStorage.getItem('token');
 
-        // ITT A TRÜKK: Megkeressük az ID-t a másik listából
-        const bookingId = findBookingId(passenger.userID);
-
-        if (!bookingId) {
-            console.error("DEBUG - Keresett UserID:", passenger.userID);
-            console.error("DEBUG - Elérhető Raw Bookings:", rawBookings);
-            alert("HIBA: Nem található a bookingId ehhez az utashoz! (Nézd meg a konzolt)");
+        if (!passenger.bookingID) {
+            alert("Hiba: Nem található foglalási azonosító!");
             return;
         }
 
         try {
-            // Most már be tudjuk illeszteni a bookingId-t az URL-be!
-            // action: 'accept' vagy 'reject'
-            const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/${action}`, {
+            const response = await fetch(`/api/bookings/${passenger.bookingID}/${action}`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (response.ok) {
-                // UI frissítése
+                // Helyi frissítés, hogy azonnal látszódjon az eredmény
                 const newStatus = action === 'accept' ? 'JOINED' : 'REJECTED';
                 setPassengers(prev => prev.map(p =>
                     p.userID === passenger.userID ? { ...p, status: newStatus } : p
                 ));
             } else {
-                alert("Sikertelen művelet.");
+                const err = await response.json();
+                alert("Hiba: " + (err.message || "Sikertelen művelet."));
             }
         } catch (error) {
             console.error(error);
@@ -82,51 +66,60 @@ const TripPassengers = ({ tripId, rawBookings = [] }) => {
         }
     };
 
-    const getStatusBadge = (status) => {
-        let className = "status-badge";
-        let label = status;
-        switch (status) {
-            case 'PENDING': className += " pending"; label = "Függőben"; break;
-            case 'JOINED':
-            case 'ACCEPTED': className += " joined"; label = "Csatlakozott"; break;
-            case 'REJECTED': className += " rejected"; label = "Elutasítva"; break;
-            case 'LEFT': className += " left"; label = "Kiszállt"; break;
-            case 'CANCELLED': className += " cancelled"; label = "Lemondta"; break;
-            default: className += " unknown";
-        }
-        return <span className={className}>{label}</span>;
-    };
-
-    if (loading) return <div className="p-2 small">Betöltés...</div>;
-    if (passengers.length === 0) return <div className="p-2 small text-muted">Még nincs utas.</div>;
+    if (loading) return <div className="p-3 text-center small text-muted"><div className="spinner-border spinner-border-sm me-2"></div>Betöltés...</div>;
+    if (passengers.length === 0) return <div className="p-3 text-center small text-muted fst-italic">Még senki nem jelentkezett erre az útra.</div>;
 
     return (
-        <div className="passengers-list">
+        <div className="passengers-list mt-2">
             {passengers.map(p => (
-                <div key={p.userID} className="passenger-row">
-                    <div className="passenger-info">
-                        <div className="fw-bold">{p.name || `User #${p.userID}`}</div>
-                        <div className="small text-muted">{p.email}</div>
+                <div key={p.userID} className="passenger-row d-flex justify-content-between align-items-center p-3 border-bottom bg-white rounded-3 mb-2 shadow-sm">
+
+                    {/* --- BAL OLDAL: Profilkép + Név + Email --- */}
+                    <div className="d-flex align-items-center">
+                        <img
+                            src={p.pfp}
+                            alt="User"
+                            className="rounded-circle border border-2 border-light me-3"
+                            style={{width: '50px', height: '50px', objectFit: 'cover'}}
+                        />
+                        <div>
+                            <div className="fw-bold text-dark mb-0" style={{fontSize: '1rem'}}>
+                                {p.name || `User #${p.userID}`}
+                            </div>
+                            <div className="text-muted small">
+                                {p.email}
+                            </div>
+                        </div>
                     </div>
 
+                    {/* --- JOBB OLDAL: Gombok vagy Státusz címke --- */}
                     <div className="passenger-actions">
                         {p.status === 'PENDING' ? (
-                            <>
+                            <div className="btn-group shadow-sm">
                                 <button
-                                    className="btn btn-success btn-sm me-2"
+                                    className="btn btn-success btn-sm px-3 fw-bold"
                                     onClick={() => handleStatusAction(p, 'accept')}
+                                    title="Elfogadás"
                                 >
-                                    ✔
+                                    <i className="bi bi-check-lg me-1"></i> Elfogad
                                 </button>
                                 <button
-                                    className="btn btn-danger btn-sm"
+                                    className="btn btn-outline-danger btn-sm px-3 fw-bold"
                                     onClick={() => handleStatusAction(p, 'reject')}
+                                    title="Elutasítás"
                                 >
-                                    ✖
+                                    <i className="bi bi-x-lg"></i>
                                 </button>
-                            </>
+                            </div>
                         ) : (
-                            getStatusBadge(p.status)
+                            <span className={`badge rounded-pill px-3 py-2 ${
+                                p.status === 'JOINED' ? 'bg-success' :
+                                p.status === 'REJECTED' ? 'bg-danger' :
+                                p.status === 'CANCELLED' ? 'bg-secondary' : 'bg-warning text-dark'
+                            }`}>
+                                {p.status === 'JOINED' ? <><i className="bi bi-check-circle-fill me-1"></i> UTAZIK</> :
+                                 p.status === 'REJECTED' ? 'ELUTASÍTVA' : p.status}
+                            </span>
                         )}
                     </div>
                 </div>
@@ -143,7 +136,7 @@ const DriverBooking = () => {
     const formatDate = (dateString) => {
         if (!dateString) return "-";
         return new Date(dateString).toLocaleDateString('hu-HU', {
-            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
     };
 
@@ -151,15 +144,19 @@ const DriverBooking = () => {
         const fetchDriverTrips = async () => {
             const userId = localStorage.getItem('userId');
             const token = localStorage.getItem('token');
+
+            if (!userId) return;
+
             try {
-                // Ez a végpont valószínűleg visszaadja a teljes Trip objektumot,
-                // amiben remélhetőleg benne van a 'bookings' lista is!
-                const response = await fetch(`http://localhost:5000/api/trips/driver/${userId}`, {
+                const response = await fetch(`/api/trips/driver/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
                 if (response.ok) {
                     const data = await response.json();
-                    setTrips(data);
+                    // Rendezés: legközelebbi indulás elől
+                    const sorted = data.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+                    setTrips(sorted);
                 }
             } catch (err) { console.error(err); }
             finally { setLoading(false); }
@@ -171,33 +168,78 @@ const DriverBooking = () => {
         <>
             <Navbar />
             <div className="driver-page-container">
-                <div className="driver-content">
-                    <h2 className="page-title">Hirdetett Útjaim</h2>
-                    {loading && <p className="text-center">Betöltés...</p>}
+                <div className="driver-content container py-4">
+                    <h2 className="page-title text-center mb-5 text-white fw-bold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                        <i className="bi bi-card-checklist me-2"></i>Jelentkezők Kezelése
+                    </h2>
 
-                    <div className="trip-list">
-                        {trips.map((trip) => (
-                            <div key={trip.tripId} className="trip-card">
-                                <div className="trip-header">
-                                    <div>
-                                        <h5 className="trip-route">{trip.startLocation} &rarr; {trip.destination}</h5>
-                                        <small className="trip-date">{formatDate(trip.startTime)}</small>
+                    {loading && <div className="text-center text-white"><div className="spinner-border"></div></div>}
+
+                    {!loading && trips.length === 0 && (
+                        <div className="alert alert-dark text-center opacity-75">
+                            Még nincsenek aktív hirdetett útjaid. <a href="/map" className="text-warning fw-bold">Hirdess egyet most!</a>
+                        </div>
+                    )}
+
+                    <div className="trip-list d-flex flex-column gap-4">
+                        {trips.map((trip) => {
+                            const start = formatLocation(trip.startLocation);
+                            const end = formatLocation(trip.endLocation);
+
+                            return (
+                                <div key={trip.tripID} className="trip-card bg-light rounded-4 shadow-lg overflow-hidden border-0">
+
+                                    {/* --- KÁRTYA FEJLÉC (ÚTVONAL) --- */}
+                                    <div className="card-header bg-white p-4 border-bottom">
+                                        <div className="d-flex justify-content-between align-items-center mb-4">
+                                            <span className="badge bg-dark text-warning px-3 py-2 rounded-pill shadow-sm">
+                                                <i className="bi bi-calendar-event me-2"></i>
+                                                {formatDate(trip.departureTime)}
+                                            </span>
+                                            <span className="fw-bold text-success small text-uppercase">
+                                                <i className="bi bi-people-fill me-1"></i> {trip.remainingSeats} hely szabad
+                                            </span>
+                                        </div>
+
+                                        <div className="row align-items-center g-2">
+                                            {/* INDULÁS */}
+                                            <div className="col-5 text-start">
+                                                <div className="fw-bolder fs-4 text-dark lh-1">{start.city}</div>
+                                                <div className="text-secondary small mt-1 text-truncate">
+                                                    <i className="bi bi-geo-alt-fill me-1 text-success"></i>
+                                                    {start.addr || "Cím nincs megadva"}
+                                                </div>
+                                            </div>
+
+                                            {/* NYÍL IKON */}
+                                            <div className="col-2 text-center">
+                                                <i className="bi bi-arrow-right-circle-fill fs-2 text-success opacity-50"></i>
+                                            </div>
+
+                                            {/* ÉRKEZÉS */}
+                                            <div className="col-5 text-end">
+                                                <div className="fw-bolder fs-4 text-dark lh-1">{end.city}</div>
+                                                <div className="text-secondary small mt-1 text-truncate">
+                                                    {end.addr || "Cím nincs megadva"}
+                                                    <i className="bi bi-geo-alt-fill me-1 text-danger ms-1"></i>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span className="seat-info">{trip.seatsAvailable} hely</span>
-                                </div>
-                                <hr />
-                                <h6 className="passengers-title">Jelentkezők:</h6>
 
-                                {/* ITT A LÉNYEG:
-                                    Átadjuk a trip.bookings-t is a gyereknek!
-                                    Remélhetőleg ebben benne vannak a booking ID-k.
-                                */}
-                                <TripPassengers
-                                    tripId={trip.tripId}
-                                    rawBookings={trip.bookings || []}
-                                />
-                            </div>
-                        ))}
+                                    {/* --- KÁRTYA TEST (UTASOK) --- */}
+                                    <div className="card-body bg-light p-3">
+                                        <h6 className="text-uppercase text-muted fw-bold small ms-1 mb-2" style={{ letterSpacing: '1px' }}>
+                                            Jelentkezők listája
+                                        </h6>
+                                        <TripPassengers tripId={trip.tripID} />
+                                    </div>
+
+                                    {/* Díszítő csík */}
+                                    <div style={{ height: '6px', background: 'linear-gradient(90deg, #198754 0%, #20c997 100%)' }}></div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

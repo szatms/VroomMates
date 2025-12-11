@@ -16,7 +16,6 @@ export default function Registration() {
     const [message, setMessage] = useState("");
     const navigate = useNavigate();
 
-    // JAVÍTÁS 2: Ha a regisztrációs oldalra lépsz, töröljük a beragadt tokent!
     useEffect(() => {
         localStorage.removeItem('token');
         localStorage.removeItem('userId');
@@ -33,7 +32,7 @@ export default function Registration() {
 
         const payload = {
             email: formData.email,
-            userName: formData.username, // A backend "userName"-t vár, a state-ben most már "username" van
+            userName: formData.username,
             displayName: formData.displayName,
             password: formData.password,
             driver: formData.role === "driver",

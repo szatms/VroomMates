@@ -11,4 +11,6 @@ public class PassengerResponseDTO {
     private String name;
     private String email;
     private BookingStatus status;
+    private long bookingID;
+    private String pfp;
 }

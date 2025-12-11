@@ -153,6 +153,8 @@ public class BookingService {
                         .userID(booking.getUser().getUserId())
                         .name(booking.getUser().getUserName())
                         .email(booking.getUser().getEmail())
+                        .bookingID(booking.getBookingID())
+                        .pfp(booking.getUser().getPfp())
                         .build())
                 .toList();
     }

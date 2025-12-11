@@ -53,7 +53,7 @@ const MyBookings = () => {
 
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+            const response = await fetch(`/api/bookings/${bookingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -85,9 +85,7 @@ const MyBookings = () => {
             }
 
             try {
-                // Backend végpont hívása (igazítsd a sajátodhoz!)
-                // Feltételezem, hogy van egy végpont, ami visszaadja a user foglalásait
-                const response = await fetch(`http://localhost:5000/api/bookings/user/${userId}`, {
+                const response = await fetch(`/api/bookings/user/${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -98,7 +96,7 @@ const MyBookings = () => {
                 }
 
                 const data = await response.json();
-                setBookings(data); // Feltételezzük, hogy a data egy tömb az objektumokkal
+                setBookings(data);
             } catch (err) {
                 console.error(err);
                 setError(err.message);
